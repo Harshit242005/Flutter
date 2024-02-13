@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:earser/Custom_button.dart';
 import 'package:earser/Custom_dialog.dart';
+import 'package:earser/TechPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -80,12 +81,21 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
               //   style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
               // ),
               // Display tech names as buttons
+
               Column(
                 children: techNames.map((techName) {
                   return ElevatedButton(
                     onPressed: () {
                       // Handle button press for the specific tech name
                       print('Button pressed for $techName');
+                      // navigate to that page
+                      // Navigate to TechPage and pass techName as a parameter
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TechPage(TechName: techName),
+                        ),
+                      );
                     },
                     child: Text(techName),
                   );
