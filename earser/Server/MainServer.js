@@ -140,6 +140,32 @@ async function startServer() {
     }
   });
 
+  // fetch the tech update
+  app.get('/api/data/:month/getTechUpdates/:tech_name', (req, res) => {
+    const month = req.params.month;
+    const techName = req.params.tech_name;
+
+    const collection = db.collection(month);
+
+    // Find the document that matches the tech_name
+    const query = { "TechName": techName };
+
+    // Use findOne to get a single matching document
+    collection.findOne(query)
+      .then((document) => {
+        if (document) {
+          const techUpdates = document.data || []; // Assuming 'data' is your array field
+          res.status(200).json({ techUpdates });
+        } else {
+          res.status(404).json({ message: 'Tech not found' });
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching tech updates:', error);
+        res.status(500).json({ message: 'Internal Server Error' });
+      });
+  });
+
 
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
