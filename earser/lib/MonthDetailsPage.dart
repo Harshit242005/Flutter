@@ -93,7 +93,8 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TechPage(TechName: techName),
+                          builder: (context) =>
+                              TechPage(TechName: techName, Month: widget.month),
                         ),
                       );
                     },

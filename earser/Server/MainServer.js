@@ -109,7 +109,37 @@ async function startServer() {
       res.status(500).json({ error: 'Internal Server Error' });
     }
 
-  })
+  });
+
+  app.post('/api/data/:month/techUpdate/:techName/:techUpdateText', async (req, res) => {
+    const techName = req.params.techName;
+    const textUpdate = req.params.techUpdateText;
+    const month = req.params.month;
+    console.log(`Tech name is: ${techName} and text update is: ${textUpdate}`);
+
+    const collection = db.collection(month);
+
+    try {
+      // Find the document based on TechName
+      const query = { "TechName": techName };
+      const update = { $push: { "data": textUpdate } };
+
+      const result = await collection.findOneAndUpdate(query, update);
+
+      if (result.value) {
+        // Document found and updated successfully
+        res.status(200).send('Update successful');
+      } else {
+        // Document not found
+        res.status(404).send('Document not found');
+      }
+    } catch (error) {
+      // Error during the update
+      console.error('Error updating document:', error);
+      res.status(400).send('Error updating document');
+    }
+  });
+
 
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

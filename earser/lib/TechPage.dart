@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 class TechPage extends StatefulWidget {
   final String TechName;
-  const TechPage({required this.TechName});
+  final String Month;
+  const TechPage({required this.TechName, required this.Month});
 
   @override
   _TechPage createState() => _TechPage();
@@ -22,7 +23,10 @@ class _TechPage extends State<TechPage> {
               showDialog(
                   context: context,
                   builder: (context) {
-                    return Custom_Textarea_Dialog();
+                    return Custom_Textarea_Dialog(
+                      techName: widget.TechName,
+                      Month: widget.Month,
+                    );
                   });
             },
             icon: Icon(Icons.add),
