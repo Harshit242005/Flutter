@@ -111,34 +111,83 @@ async function startServer() {
 
   });
 
+  // app.post('/api/data/:month/techUpdate/:techName/:techUpdateText', async (req, res) => {
+  //   const techName = req.params.techName;
+  //   const textUpdate = req.params.techUpdateText;
+  //   const month = req.params.month;
+  //   console.log(`Tech name is: ${techName} and text update is: ${textUpdate}`);
+
+  //   const collection = db.collection(month);
+
+  //   try {
+  //     // Find the document based on TechName
+  //     const query = { "TechName": techName };
+  //     const update = { $push: { "data": textUpdate } };
+
+  //     const result = await collection.findOneAndUpdate(query, update);
+
+  //     if (result.value) {
+  //       // Document found and updated successfully
+  //       res.status(200).send('Update successful');
+  //     } else {
+  //       // Document not found
+  //       res.status(404).send('Document not found');
+  //     }
+  //   } catch (error) {
+  //     // Error during the update
+  //     console.error('Error updating document:', error);
+  //     res.status(400).send('Error updating document');
+  //   }
+  // });
+
+  // this would add the current date also over the doc
   app.post('/api/data/:month/techUpdate/:techName/:techUpdateText', async (req, res) => {
     const techName = req.params.techName;
     const textUpdate = req.params.techUpdateText;
     const month = req.params.month;
-    console.log(`Tech name is: ${techName} and text update is: ${textUpdate}`);
+    const currentDate = new Date().toLocaleDateString('en-GB'); // Get current date in dd/mm/yy format
+    console.log(`Tech name is: ${techName}, text update is: ${textUpdate}, current date is: ${currentDate}`);
 
     const collection = db.collection(month);
 
     try {
-      // Find the document based on TechName
-      const query = { "TechName": techName };
-      const update = { $push: { "data": textUpdate } };
+      // Find the document based on TechName and current date
+      const query = { "TechName": techName, "data.today_date": currentDate };
+      const update = { $push: { "data.$.updates": textUpdate } };
 
       const result = await collection.findOneAndUpdate(query, update);
+      console.log(result);
+      if (result == null) {
+        // Document not found for the current date, create a new one
+        const existingDocument = await collection.findOne({ "TechName": techName });
 
-      if (result.value) {
-        // Document found and updated successfully
-        res.status(200).send('Update successful');
+        if (existingDocument) {
+          // Document found for the TechName, but not for the current date
+          const newDataObject = {
+            "today_date": currentDate,
+            "updates": [textUpdate]
+          };
+
+          await collection.updateOne(
+            { "TechName": techName },
+            { $push: { "data": newDataObject } }
+          );
+        }
+
+        // it should add the JSON data only inside the document
+
       } else {
-        // Document not found
-        res.status(404).send('Document not found');
+        // Document found for the current date, update the existing one
+        res.status(200).send('Update successful');
       }
+
     } catch (error) {
       // Error during the update
       console.error('Error updating document:', error);
       res.status(400).send('Error updating document');
     }
   });
+
 
   // fetch the tech update
   app.get('/api/data/:month/getTechUpdates/:tech_name', (req, res) => {
@@ -155,6 +204,7 @@ async function startServer() {
       .then((document) => {
         if (document) {
           const techUpdates = document.data || []; // Assuming 'data' is your array field
+          console.log(techUpdates);
           res.status(200).json({ techUpdates });
         } else {
           res.status(404).json({ message: 'Tech not found' });
