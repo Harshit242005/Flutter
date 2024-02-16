@@ -53,60 +53,80 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${widget.month} Details'),
-        actions: [
-          CustomIconButton(
-            icon: Icons.add,
-            text: 'Create',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return CustomDialog();
-                },
-              );
-            },
+        appBar: AppBar(
+          title: Text(
+            '${widget.month} Details',
+            style:
+                TextStyle(fontFamily: 'ReadexPro', fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-      body: Center(
-        child: Padding(
+          actions: [
+            CustomIconButton(
+              icon: Icons.add,
+              text: 'Create',
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return CustomDialog();
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+        body: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              // Text(
-              //   'Details for ${widget.month}',
-              //   style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-              // ),
-              // Display tech names as buttons
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: techNames.map((techName) {
+                    return Container(
+                      width: 200.0,
+                      height: 50,
+                      margin: EdgeInsets.only(
+                          right: 16.0), // Optional spacing between buttons
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Handle button press for the specific tech name
+                          print('Button pressed for $techName');
 
-              Column(
-                children: techNames.map((techName) {
-                  return ElevatedButton(
-                    onPressed: () {
-                      // Handle button press for the specific tech name
-                      print('Button pressed for $techName');
-                      // navigate to that page
-                      // Navigate to TechPage and pass techName as a parameter
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              TechPage(TechName: techName, Month: widget.month),
+                          // Navigate to TechPage and pass techName as a parameter
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => TechPage(
+                                  TechName: techName, Month: widget.month),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors
+                              .black, // Set your preferred background color
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(10), // No border radius
+                          ),
                         ),
-                      );
-                    },
-                    child: Text(techName),
-                  );
-                }).toList(),
+                        child: Text(
+                          techName,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'ReadexPro',
+                              fontWeight: FontWeight.w400,
+                              fontSize: 15),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
             ],
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 

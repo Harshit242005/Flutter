@@ -1,7 +1,10 @@
 //import 'package:earser/Custom_alert.dart';
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+// ignore: use_key_in_widget_constructors
 class CustomDialog extends StatefulWidget {
   @override
   _CustomDialogState createState() => _CustomDialogState();

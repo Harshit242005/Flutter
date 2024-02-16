@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 
 class CustomAlertDialog extends StatelessWidget {
@@ -6,6 +8,7 @@ class CustomAlertDialog extends StatelessWidget {
   //final VoidCallback onConfirm;
 
   const CustomAlertDialog({
+    super.key,
     required this.title,
     required this.content,
     //required this.onConfirm,
@@ -19,7 +22,7 @@ class CustomAlertDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(content),
-          SizedBox(height: 16.0),
+          const SizedBox(height: 16.0),
           // ElevatedButton(
           //   onPressed: onConfirm,
           //   child: Text('Confirm'),
@@ -34,7 +37,7 @@ void showCustomDialog(BuildContext context) {
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return CustomAlertDialog(
+      return const CustomAlertDialog(
         title: 'Custom Alert',
         content: 'This is a custom alert dialog.',
         // onConfirm: () {
@@ -46,23 +49,25 @@ void showCustomDialog(BuildContext context) {
 }
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Custom Alert Example'),
+          title: const Text('Custom Alert Example'),
         ),
         body: Center(
           child: ElevatedButton(
             onPressed: () {
               showCustomDialog(context);
             },
-            child: Text('Show Custom Dialog'),
+            child: const Text('Show Custom Dialog'),
           ),
         ),
       ),

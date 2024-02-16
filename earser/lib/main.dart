@@ -12,12 +12,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Simple App',
+      title: 'CodeUp',
       home: Scaffold(
         appBar: AppBar(
           title: const Text(
-            'My Simple App',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            'CodeUp',
+            style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'ReadexPro'),
           ),
           backgroundColor: Colors.black,
           elevation: 1.0,
@@ -88,6 +91,9 @@ class MonthButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double buttonWidth = 400.0; // Set your preferred button width
+    double fontSize = screenWidth < buttonWidth ? 14.0 : 20.0;
     return Expanded(
       child: SizedBox(
         width: 400.0, // Set your preferred width
@@ -107,14 +113,21 @@ class MonthButton extends StatelessWidget {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor:
-                Colors.white, // Set your preferred background color
+            backgroundColor: const Color.fromARGB(
+                255, 255, 212, 212), // Set your preferred background color
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                   10.0), // Set your preferred border radius
             ),
           ),
-          child: Text(month),
+          child: Text(
+            month,
+            style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'ReadexPro',
+                fontWeight: FontWeight.w600,
+                fontSize: fontSize),
+          ),
         ),
       ),
     );

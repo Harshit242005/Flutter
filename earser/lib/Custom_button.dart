@@ -1,5 +1,7 @@
 // custom_button.dart
 
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 
 class CustomIconButton extends StatelessWidget {
@@ -7,6 +9,7 @@ class CustomIconButton extends StatelessWidget {
   final String text;
   final VoidCallback onPressed;
 
+  // ignore: use_key_in_widget_constructors
   const CustomIconButton({
     required this.icon,
     required this.text,
@@ -15,21 +18,27 @@ class CustomIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-        child: Row(
-          children: [
-            Icon(icon),
-            SizedBox(width: 8.0),
-            Text(
-              text,
-              style: TextStyle(fontSize: 20),
+    return Tooltip(
+        message: 'Create tech',
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                Icon(icon),
+                Tooltip(
+                  key: key,
+                  message: 'Create tech',
+                ),
+                const SizedBox(width: 8.0),
+                Text(
+                  text,
+                  style: const TextStyle(fontSize: 20, fontFamily: 'ReadexPro'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        ));
   }
 }
