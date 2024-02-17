@@ -37,16 +37,28 @@ class _Custom_Textarea_Dialog extends State<Custom_Textarea_Dialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add tech update for'),
+      shape: RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.circular(10.0), // Adjust the border radius as needed
+      ),
+      backgroundColor: Colors.black,
+      title: const Text(
+        'Add tech update',
+        style: TextStyle(color: Colors.white, fontFamily: 'ReadexPro'),
+      ),
       content: Container(
+        decoration: const BoxDecoration(boxShadow: [
+          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 10)
+        ]),
         width: 600.0, // Set your preferred width
-        height: 100.0, // Set your preferred height
+        height: 75.0, // Set your preferred height
         child: TextField(
           controller: _custom_textarea_controller,
           maxLines: null,
           keyboardType: TextInputType.multiline,
           decoration: const InputDecoration(
-            hintText: 'Enter your multiline text here',
+            hintText: 'Enter tech updates',
+            hintStyle: TextStyle(color: Colors.white, fontFamily: 'ReadexPro'),
             border: OutlineInputBorder(),
           ),
         ),
@@ -57,10 +69,27 @@ class _Custom_Textarea_Dialog extends State<Custom_Textarea_Dialog> {
             width: 200,
             height: 50,
             child: ElevatedButton(
+                style: ButtonStyle(
+                    shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                            10.0), // Adjust the border radius as needed
+                      ),
+                    ),
+                    elevation: MaterialStateProperty.all(10),
+                    backgroundColor: MaterialStateProperty.all<Color>(
+                        Color.fromARGB(255, 160, 243, 244))),
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: const Text('Cancel')),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(
+                      fontFamily: 'ReadexPro',
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600),
+                )),
           ),
           const SizedBox(
             width: 25,
@@ -69,13 +98,28 @@ class _Custom_Textarea_Dialog extends State<Custom_Textarea_Dialog> {
               width: 200,
               height: 50,
               child: ElevatedButton(
-                  // call to update the text into tech
-
+                  style: ButtonStyle(
+                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                        RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              10.0), // Adjust the border radius as needed
+                        ),
+                      ),
+                      elevation: MaterialStateProperty.all(10),
+                      backgroundColor: MaterialStateProperty.all<Color>(
+                          Color.fromARGB(255, 160, 243, 244))),
                   onPressed: () {
                     AddUpdate(_custom_textarea_controller.text);
                     Navigator.of(context).pop();
                   },
-                  child: const Text('Add')))
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(
+                        fontFamily: 'ReadexPro',
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600),
+                  )))
         ])
       ],
     );

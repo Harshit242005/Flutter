@@ -12,25 +12,30 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CodeUp',
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'CodeUp',
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'ReadexPro'),
+        title: 'CodeUp',
+        home: Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            title: const Text(
+              'CodeUp',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'ReadexPro'),
+            ),
+            elevation: 1.0,
           ),
-          backgroundColor: Colors.black,
-          elevation: 1.0,
-        ),
-        body: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: ButtonGrid(),
-        ),
-      ),
-    );
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [ButtonGrid()],
+              ),
+            ),
+          ),
+        ));
   }
 }
 
@@ -93,11 +98,11 @@ class MonthButton extends StatelessWidget {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     double buttonWidth = 400.0; // Set your preferred button width
-    double fontSize = screenWidth < buttonWidth ? 14.0 : 20.0;
+    double fontSize = screenWidth < buttonWidth ? 14.0 : 16.0;
     return Expanded(
       child: SizedBox(
-        width: 400.0, // Set your preferred width
-        height: 80.0, // Set your preferred height
+        width: 250.0, // Set your preferred width4
+        height: 50.0, // Set your preferred height
         child: ElevatedButton(
           onPressed: () {
             // Handle button press for the specific month
@@ -113,8 +118,7 @@ class MonthButton extends StatelessWidget {
             );
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color.fromARGB(
-                255, 255, 212, 212), // Set your preferred background color
+            backgroundColor: Colors.cyan.shade100,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(
                   10.0), // Set your preferred border radius

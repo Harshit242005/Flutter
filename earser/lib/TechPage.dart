@@ -50,6 +50,23 @@ class _TechPage extends State<TechPage> {
     }
   }
 
+  // function to delete the container
+  Future<void> deleteContainer(String date, String techName) async {
+    print('deleting date container is: ${date} and techname is: ${techName}');
+    final url = Uri.parse(
+        'http://localhost:3000/api/data/${widget.Month}/deleteContainer/${techName}/${date}');
+    try {
+      final response = await http.post(url);
+      if (response.statusCode == 200) {
+        // successfully deleted the container
+      } else {
+        // not been able to delete the container
+      }
+    } catch (error) {
+      print('some error occured while deleting the container: $error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +89,9 @@ class _TechPage extends State<TechPage> {
                     );
                   });
 
-              // rebuild the widget when the button clicked
+              setState(() {
+                techUpdate();
+              });
             },
             icon: Icon(Icons.add),
             splashColor: Colors.blue[400],
@@ -107,13 +126,33 @@ class _TechPage extends State<TechPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Date: $currentDate',
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'ReadexPro'),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Date: $currentDate',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  fontFamily: 'ReadexPro',
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Color.fromARGB(255, 68, 190, 255),
+                                ),
+                                onPressed: () {
+                                  // adding a function to delete the current container
+                                  deleteContainer(currentDate, widget.TechName);
+                                  // setState(() {
+                                  //   techUpdate();
+                                  // });
+                                },
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 8.0),
+                          const SizedBox(height: 8.0),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children:
@@ -121,11 +160,26 @@ class _TechPage extends State<TechPage> {
                               return Padding(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 4.0),
-                                child: Text(
-                                  updates[updateIndex],
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.normal,
-                                      fontFamily: 'ReadexPro'),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons
+                                          .star, // You can change this to any icon you prefer
+                                      color: Colors
+                                          .yellow, // You can customize the color of the icon
+                                    ),
+                                    const SizedBox(
+                                        width:
+                                            8), // Adjust the spacing between the icon and text
+                                    Text(
+                                      updates[updateIndex],
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 15,
+                                        fontFamily: 'ReadexPro',
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               );
                             }),

@@ -27,7 +27,8 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
 
   // Function to fetch tech names
   Future<void> fetchTechNames(String monthName) async {
-    final uri = Uri.parse('http://localhost:3000/fetchTechNames/$monthName');
+    final uri =
+        Uri.parse('http://localhost:3000/api/data/fetchTechNames/$monthName');
 
     try {
       final response = await http.get(uri);
