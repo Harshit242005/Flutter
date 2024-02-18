@@ -17,7 +17,7 @@ async function connectToMongoDB() {
 
   try {
     await client.connect();
-    console.log('Connected to MongoDB');
+    
     return client.db(); // Return the database object
   } catch (error) {
     console.error('Error connecting to MongoDB:', error);
@@ -142,7 +142,7 @@ app.get('/api/data/:month/getTechUpdates/:tech_name', async (req, res) => {
   const techName = req.params.tech_name;
   const db = await connectToMongoDB();  // Connect to MongoDB
   const collection = db.collection(month);
-
+  console.log('getting tech updates!');
   // Find the document that matches the tech_name
   const query = { "TechName": techName };
 
@@ -163,27 +163,62 @@ app.get('/api/data/:month/getTechUpdates/:tech_name', async (req, res) => {
     });
 });
 
-app.post('/api/data/:month/deleteContainer/:techName/:currentDate', async (req, res) => {
-  const month = req.params.month;
-  const techName = req.params.techName;
-  const currentDate = req.params.currentDate;
+// app.post('/api/data/:month/delete/:techName/:currentDate', async (req, res) => {
+//   const month = req.params.month;
+//   const techName = req.params.techName;
+//   const currentDate = req.params.currentDate;
+//   console.log(`month name is: ${month}, tech name is: ${techName} and current date is: ${currentDate}`);
+//   const db = await connectToMongoDB();  // Connect to MongoDB
+//   const collection = db.collection(month);
+
+//   // Update the document using $pull to remove the specified object from the data array
+//   const result = await collection.updateOne(
+//     { "TechName": techName },
+//     { $pull: { "data": { "today_date": currentDate } } }
+//   );
+
+//   if (result.modifiedCount > 0) {
+//     res.status(200).json({ message: 'Object deleted successfully' });
+//   } else {
+//     res.status(404).json({ message: 'Object not found or not modified' });
+//   }
+// });
+
+
+
+// delete the container
+app.post('/api/data/removeContainer', async (req, res) => {
+  console.log('testing api for delete container');
+  console.log(req.body);
+  console.log(req.body.Month);
+  console.log(req.body.techName);
+  console.log(req.body.date);
+  
+  const month = req.body.Month;
+  const techName = req.body.techName;
+  const currentDate = req.body.date;
+
   console.log(`month name is: ${month}, tech name is: ${techName} and current date is: ${currentDate}`);
-  const db = await connectToMongoDB();  // Connect to MongoDB
-  const collection = db.collection(month);
+  
+  try {
+    const db = await connectToMongoDB();  // Connect to MongoDB
+    const collection = db.collection(month);
 
-  // Update the document using $pull to remove the specified object from the data array
-  const result = await collection.updateOne(
-    { "TechName": techName },
-    { $pull: { "data": { "today_date": currentDate } } }
-  );
+    const result = await collection.updateOne(
+      { "TechName": techName },
+      { $pull: { "data": { "today_date": currentDate } } }
+    );
 
-  if (result.modifiedCount > 0) {
-    res.status(200).json({ message: 'Object deleted successfully' });
-  } else {
-    res.status(404).json({ message: 'Object not found or not modified' });
+    if (result.modifiedCount > 0) {
+      res.status(200).json({ message: 'Object deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Object not found or not modified' });
+    }
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
-
 
 
 app.listen(PORT, () => {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:earser/Custom_confirm_dialog.dart';
 import 'package:earser/Custom_textarea_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -50,20 +51,28 @@ class _TechPage extends State<TechPage> {
     }
   }
 
-  // function to delete the container
   Future<void> deleteContainer(String date, String techName) async {
-    print('deleting date container is: ${date} and techname is: ${techName}');
-    final url = Uri.parse(
-        'http://localhost:3000/api/data/${widget.Month}/deleteContainer/${techName}/${date}');
+    print('calling for container delete $date');
+
+    final url = Uri.parse('http://localhost:3000/api/data/removeContainer');
+
     try {
-      final response = await http.post(url);
+      final response = await http.post(
+        url,
+        body: {
+          'Month': widget.Month,
+          'techName': techName,
+          'date': date,
+        },
+      );
+
       if (response.statusCode == 200) {
-        // successfully deleted the container
+        print('called successfully');
       } else {
-        // not been able to delete the container
+        print('some error occurred');
       }
     } catch (error) {
-      print('some error occured while deleting the container: $error');
+      print('some error occurred while deleting the container: $error');
     }
   }
 
@@ -73,8 +82,8 @@ class _TechPage extends State<TechPage> {
       appBar: AppBar(
         title: Text(
           '${widget.TechName}',
-          style:
-              TextStyle(fontFamily: 'ReadexPro', fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontFamily: 'ReadexPro', fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -142,12 +151,23 @@ class _TechPage extends State<TechPage> {
                                   Icons.delete,
                                   color: Color.fromARGB(255, 68, 190, 255),
                                 ),
-                                onPressed: () {
-                                  // adding a function to delete the current container
-                                  deleteContainer(currentDate, widget.TechName);
-                                  // setState(() {
-                                  //   techUpdate();
-                                  // });
+                                onPressed: () async {
+                                  // instead of this we should be adding some confirm dialog buttons
+                                  ConfirmDialog confirmDialog = ConfirmDialog(
+                                    title: "Confirmation",
+                                    content:
+                                        "Are you sure you want to proceed?",
+                                  );
+
+                                  bool userConfirmed =
+                                      await confirmDialog.show(context);
+                                  if (userConfirmed) {
+                                    deleteContainer(
+                                        currentDate, widget.TechName);
+                                  } else {
+                                    print(
+                                        'user has not allowed for the deletion of the container');
+                                  }
                                 },
                               ),
                             ],

@@ -68,7 +68,9 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    return CustomDialog();
+                    return CustomDialog(
+                      month: widget.month,
+                    );
                   },
                 );
               },
@@ -88,7 +90,7 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
                     return Container(
                       width: 200.0,
                       height: 50,
-                      margin: EdgeInsets.only(
+                      margin: const EdgeInsets.only(
                           right: 16.0), // Optional spacing between buttons
                       child: ElevatedButton(
                         onPressed: () {

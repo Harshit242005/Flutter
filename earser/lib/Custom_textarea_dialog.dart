@@ -53,10 +53,16 @@ class _Custom_Textarea_Dialog extends State<Custom_Textarea_Dialog> {
         width: 600.0, // Set your preferred width
         height: 75.0, // Set your preferred height
         child: TextField(
+          style: TextStyle(fontFamily: 'ReadexPro', color: Colors.white),
           controller: _custom_textarea_controller,
           maxLines: null,
           keyboardType: TextInputType.multiline,
           decoration: const InputDecoration(
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(
+                  color: Colors.blue,
+                  width: 2), // Adjust color and width as needed
+            ),
             hintText: 'Enter tech updates',
             hintStyle: TextStyle(color: Colors.white, fontFamily: 'ReadexPro'),
             border: OutlineInputBorder(),
