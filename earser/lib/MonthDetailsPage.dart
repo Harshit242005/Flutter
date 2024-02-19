@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'package:earser/Custom_button.dart';
-import 'package:earser/Custom_dialog.dart';
-import 'package:earser/TechPage.dart';
+import 'package:CodeUp/Custom_button.dart';
+import 'package:CodeUp/Custom_dialog.dart';
+import 'package:CodeUp/TechPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -72,7 +72,14 @@ class _MonthDetailsPageState extends State<MonthDetailsPage> {
                       month: widget.month,
                     );
                   },
-                );
+                ).then((value) {
+                  // This code will be executed after the dialog is closed
+                  if (value != null && value == true) {
+                    setState(() {
+                      fetchTechNames(widget.month);
+                    });
+                  }
+                });
               },
             ),
           ],

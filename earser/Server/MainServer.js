@@ -1,13 +1,14 @@
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
-
+const bodyParser = require('body-parser');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Enable CORS for all routes
 app.use(cors());
-
+// Parse JSON-encoded request bodies
+app.use(express.json());
 // Connect to MongoDB Atlas
 const uri = 'mongodb+srv://agreharshit610:i4ZnXRbFARI4kaSl@taskhandler.u5cgjfw.mongodb.net/CodeUp';
 
@@ -201,7 +202,7 @@ app.post('/api/data/removeContainer', async (req, res) => {
   console.log(`month name is: ${month}, tech name is: ${techName} and current date is: ${currentDate}`);
   
   try {
-    const db = await connectToMongoDB();  // Connect to MongoDB
+    const db = await connectToMongoDB();  
     const collection = db.collection(month);
 
     const result = await collection.updateOne(
@@ -213,6 +214,31 @@ app.post('/api/data/removeContainer', async (req, res) => {
       res.status(200).json({ message: 'Object deleted successfully' });
     } else {
       res.status(404).json({ message: 'Object not found or not modified' });
+    }
+  } catch (error) {
+    console.error(`Error: ${error}`);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+
+
+// api endpoint to delete the whole tech
+app.post('/api/data/:Month/deleteTech/:TechName', async (req, res) => {
+  const month = req.params.Month;
+  const techName = req.params.TechName;
+  console.log(`params data for this: ${month} and ${techName}`);
+
+  try {
+    const db = await connectToMongoDB();
+    const collection = db.collection(month);
+
+    // Delete the document with the specified TechName
+    const result = await collection.deleteOne({ "TechName": techName });
+
+    if (result.deletedCount > 0) {
+      res.status(200).json({ message: 'Tech deleted successfully' });
+    } else {
+      res.status(404).json({ message: 'Tech not found or not deleted' });
     }
   } catch (error) {
     console.error(`Error: ${error}`);

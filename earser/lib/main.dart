@@ -1,8 +1,18 @@
-import 'package:earser/MonthDetailsPage.dart';
+import 'package:CodeUp/Background.dart';
+import 'package:CodeUp/MonthDetailsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:window_manager/window_manager.dart';
 
-void main() {
+void main() async {
+  //needed to ensure binding was initialized
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await WindowManager.instance.ensureInitialized();
+  windowManager.waitUntilReadyToShow().then((_) async {
+    await windowManager.setTitle('CodeUp');
+  });
+
   runApp(const MyApp());
 }
 
@@ -12,6 +22,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        debugShowCheckedModeBanner:
+            false, // Set this to false to remove the debug banner
         title: 'CodeUp',
         home: Scaffold(
           appBar: AppBar(
@@ -31,7 +43,7 @@ class MyApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [ButtonGrid()],
+                children: [BackgroundImage(), ButtonGrid()],
               ),
             ),
           ),

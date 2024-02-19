@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:earser/Custom_confirm_dialog.dart';
-import 'package:earser/Custom_textarea_dialog.dart';
+import 'package:CodeUp/Custom_confirm_dialog.dart';
+import 'package:CodeUp/Custom_textarea_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -52,27 +52,51 @@ class _TechPage extends State<TechPage> {
   }
 
   Future<void> deleteContainer(String date, String techName) async {
-    print('calling for container delete $date');
+    print(
+        'calling for container delete $date, month is ${widget.Month} and tech name is: $techName');
 
     final url = Uri.parse('http://localhost:3000/api/data/removeContainer');
 
     try {
       final response = await http.post(
         url,
-        body: {
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
           'Month': widget.Month,
           'techName': techName,
           'date': date,
-        },
+        }),
       );
 
       if (response.statusCode == 200) {
+        setState(() {
+          techUpdate();
+        });
         print('called successfully');
       } else {
         print('some error occurred');
       }
     } catch (error) {
       print('some error occurred while deleting the container: $error');
+    }
+  }
+
+  // function to delete whole tech
+  Future<void> deleteTech(String month, String techName) async {
+    final url =
+        Uri.parse('http://localhost:3000/api/data/$month/deleteTech/$techName');
+    try {
+      final response = await http.post(url);
+      if (response.statusCode == 200) {
+        print('tech has been deleted successfully');
+        setState(() {
+          techUpdate();
+        });
+      } else {
+        print('tech has not been deleted successfully');
+      }
+    } catch (error) {
+      print('some error occured while deleting the tech $error');
     }
   }
 
@@ -102,10 +126,20 @@ class _TechPage extends State<TechPage> {
                 techUpdate();
               });
             },
-            icon: Icon(Icons.add),
+            icon: const Icon(Icons.add),
             splashColor: Colors.blue[400],
             tooltip: 'Add tech related update',
           ),
+          // adding an another button for deleting the tech as a whole from the database instead of containers
+          IconButton(
+            onPressed: () {
+              // call for the function to delete the whole
+              deleteTech(widget.Month, widget.TechName);
+            },
+            icon: const Icon(Icons.delete),
+            splashColor: Colors.blue[400],
+            tooltip: 'delete tech',
+          )
         ],
       ),
       body: Center(
