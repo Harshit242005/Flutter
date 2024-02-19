@@ -1,4 +1,3 @@
-import 'package:CodeUp/Background.dart';
 import 'package:CodeUp/MonthDetailsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -43,7 +42,7 @@ class MyApp extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [BackgroundImage(), ButtonGrid()],
+                children: [ButtonGrid()],
               ),
             ),
           ),
