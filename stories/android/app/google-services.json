@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "168134864112",
+    "project_id": "zeus-384017",
+    "storage_bucket": "zeus-384017.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:168134864112:android:23210cc0076a508a296635",
+        "android_client_info": {
+          "package_name": "com.example.stories"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "168134864112-qamcbls4ebi3elmi36e32pk67a6ede75.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB6GzLDssfMuj4F-rGM3dvGb4b9mW0_dGU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "168134864112-aqhuvaeevkbaprsuil0j4okot32elttj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

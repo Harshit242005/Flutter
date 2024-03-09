@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>168134864112-pbn2p35m0ekp5e8j5clbgbifi4efrsqq.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.168134864112-pbn2p35m0ekp5e8j5clbgbifi4efrsqq</string>
+	<key>API_KEY</key>
+	<string>AIzaSyD23F7kqN7yaYFmw5D5TeX7i7vBC7twb-g</string>
+	<key>GCM_SENDER_ID</key>
+	<string>168134864112</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.stories</string>
+	<key>PROJECT_ID</key>
+	<string>zeus-384017</string>
+	<key>STORAGE_BUCKET</key>
+	<string>zeus-384017.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:168134864112:ios:5d55036eac3bd73a296635</string>
+</dict>
+</plist>
