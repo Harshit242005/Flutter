@@ -1,17 +1,23 @@
+// ignore_for_file: avoid_print, duplicate_ignore, use_build_context_synchronously
+
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'package:hive/hive.dart';
+// import 'package:hive/hive.dart';
 import 'package:stories/landing.dart';
-import 'package:stories/user.dart';
+// import 'package:stories/user.dart';
+
+// call for the flutter
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
 
   @override
+  // ignore: library_private_types_in_public_api
   _LoginState createState() => _LoginState();
 }
 
@@ -21,117 +27,186 @@ class _LoginState extends State<Login> {
   // listen for the text controller
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
-  // ignore: prefer_final_fields
-  FirebaseAuth _auth = FirebaseAuth.instance;
+  // // ignore: prefer_final_fields
+  // FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // ignore: non_constant_identifier_names
-  void login_user() async {
+  void login() async {
     String userEmail = email.text.trim();
     String userPassword = password.text.trim();
 
-    // ignore: unused_local_variable
-    UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-      email: userEmail,
-      password: userPassword,
-    );
+    // Query Firestore to find a user document with the entered email
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('email', isEqualTo: userEmail)
+        .limit(1)
+        .get();
+    print(querySnapshot.docs);
+    if (querySnapshot.docs.isNotEmpty) {
+      // User found, check if password matches
+      DocumentSnapshot userDoc = querySnapshot.docs.first;
+      String dbPassword = userDoc.get('password');
 
-    // User authenticated successfully
-    String base64Image = '';
-    // ignore: use_build_context_synchronously
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Landing(
-          email: userEmail,
-          image: base64Image,
+      if (userPassword == dbPassword) {
+        // Passwords match, navigate to next screen
+        // ignore: use_build_context_synchronously
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Landing(
+                    email: userEmail,
+                  )),
+        );
+      } else {
+        // Incorrect password
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text(
+              'Incorrect Password',
+              style: TextStyle(fontFamily: 'ReadexPro'),
+            ),
+            content: const Text('The password entered is incorrect.',
+                style: TextStyle(fontFamily: 'ReadexPro')),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Close',
+                    style: TextStyle(fontFamily: 'ReadexPro')),
+              ),
+            ],
+          ),
+        );
+      }
+    } else {
+      // User not found
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('User Not Found',
+              style: TextStyle(fontFamily: 'ReadexPro')),
+          content: const Text('No user found with the provided email.',
+              style: TextStyle(fontFamily: 'ReadexPro')),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Close',
+                  style: TextStyle(fontFamily: 'ReadexPro')),
+            ),
+          ],
         ),
-      ),
-    );
-
-    // // Open the Hive box
-    // var box = await Hive.openBox<User>('users');
-    // // ignore: avoid_print
-    // print('box values are: ${box.values}');
-
-    // // Get user input
-    // String userEmail = email.text;
-    // String userPassword = password.text;
-
-    // if (box.values.any((user) => user.email == userEmail)) {
-    //   // Retrieve the user object
-    //   User existingUser =
-    //       box.values.firstWhere((user) => user.email == userEmail);
-
-    //   // Hash the entered password
-    //   String enteredPasswordHash =
-    //       sha256.convert(utf8.encode(userPassword)).toString();
-
-    //   // Compare the hashed passwords
-    //   if (existingUser!.passwordHash == enteredPasswordHash) {
-    //     // Passwords match, user is authenticated
-    //     String base64Image = existingUser.base64Image;
-
-    //     // ignore: use_build_context_synchronously
-    //     Navigator.push(
-    //         context,
-    //         MaterialPageRoute(
-    //             builder: (context) =>
-    //                 Landing(email: userEmail, image: base64Image)));
-    //   } else {
-    //     // Passwords do not match
-    //     print('Incorrect password for user: $userEmail');
-    //     // ignore: use_build_context_synchronously
-    //     showDialog(
-    //         context: context,
-    //         builder: (context) => AlertDialog(
-    //               title: const Text(
-    //                 'Incorrect pasword',
-    //                 style: TextStyle(fontFamily: 'ReadexPro'),
-    //               ),
-    //               content: Text('Incorrect password for user: $userEmail'),
-    //               actions: <Widget>[
-    //                 TextButton(
-    //                   onPressed: () {
-    //                     Navigator.of(context).pop();
-    //                   },
-    //                   child: const Text(
-    //                     'Close',
-    //                     style: TextStyle(fontFamily: 'ReadexPro'),
-    //                   ),
-    //                 ),
-    //               ],
-    //             ));
-    //   }
-    // } else {
-    //   // User with the entered email does not exist
-    //   // ignore: avoid_print
-    //   print('User with email $userEmail does not exist.');
-    //   // ignore: use_build_context_synchronously
-    //   showDialog(
-    //       context: context,
-    //       builder: (context) => AlertDialog(
-    //             title: const Text(
-    //               'Email not found',
-    //               style: TextStyle(fontFamily: 'ReadexPro'),
-    //             ),
-    //             content: Text(
-    //               'User with email $userEmail does not exist.',
-    //               style: const TextStyle(fontFamily: 'ReadexPro'),
-    //             ),
-    //             actions: <Widget>[
-    //               TextButton(
-    //                 onPressed: () {
-    //                   Navigator.of(context).pop(); // Close the dialog
-    //                 },
-    //                 child: const Text('Close'),
-    //               ),
-    //             ],
-    //           ));
-    // }
-
-    // // Close the box when done
-    // await box.close();
+      );
+    }
   }
+
+  // // ignore: non_constant_identifier_names
+  // void login_user() async {
+  //   // String userEmail = email.text.trim();
+  //   // String userPassword = password.text.trim();
+
+  //   // // ignore: unused_local_variable
+  //   // UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+  //   //   email: userEmail,
+  //   //   password: userPassword,
+  //   // );
+
+  //   // // User authenticated successfully
+  //   // String base64Image = '';
+  //   // // ignore: use_build_context_synchronously
+  //   // Navigator.push(
+  //   //   context,
+  //   //   MaterialPageRoute(
+  //   //     builder: (context) => Landing(
+  //   //       email: userEmail,
+  //   //       image: base64Image,
+  //   //     ),
+  //   //   ),
+  //   // );
+
+  //   // Open the Hive box
+  //   var box = await Hive.openBox<User>('users');
+  //   // ignore: avoid_print
+  //   print('box values are: ${box.values}');
+
+  //   // Get user input
+  //   String userEmail = email.text;
+  //   String userPassword = password.text;
+
+  //   if (box.values.any((user) => user.email == userEmail)) {
+  //     // Retrieve the user object
+  //     User existingUser =
+  //         box.values.firstWhere((user) => user.email == userEmail);
+
+  //     // Hash the entered password
+  //     String enteredPasswordHash =
+  //         sha256.convert(utf8.encode(userPassword)).toString();
+
+  //     // Compare the hashed passwords
+  //     if (existingUser.passwordHash == enteredPasswordHash) {
+  //       // Passwords match, user is authenticated
+  //       String base64Image = existingUser.base64Image;
+
+  //       // ignore: use_build_context_synchronously
+  //       Navigator.push(context,
+  //           MaterialPageRoute(builder: (context) => Landing(email: userEmail)));
+  //     } else {
+  //       // Passwords do not match
+  //       print('Incorrect password for user: $userEmail');
+  //       // ignore: use_build_context_synchronously
+  //       showDialog(
+  //           context: context,
+  //           builder: (context) => AlertDialog(
+  //                 title: const Text(
+  //                   'Incorrect pasword',
+  //                   style: TextStyle(fontFamily: 'ReadexPro'),
+  //                 ),
+  //                 content: Text('Incorrect password for user: $userEmail'),
+  //                 actions: <Widget>[
+  //                   TextButton(
+  //                     onPressed: () {
+  //                       Navigator.of(context).pop();
+  //                     },
+  //                     child: const Text(
+  //                       'Close',
+  //                       style: TextStyle(fontFamily: 'ReadexPro'),
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ));
+  //     }
+  //   } else {
+  //     // User with the entered email does not exist
+  //     // ignore: avoid_print
+  //     print('User with email $userEmail does not exist.');
+  //     // ignore: use_build_context_synchronously
+  //     showDialog(
+  //         context: context,
+  //         builder: (context) => AlertDialog(
+  //               title: const Text(
+  //                 'Email not found',
+  //                 style: TextStyle(fontFamily: 'ReadexPro'),
+  //               ),
+  //               content: Text(
+  //                 'User with email $userEmail does not exist.',
+  //                 style: const TextStyle(fontFamily: 'ReadexPro'),
+  //               ),
+  //               actions: <Widget>[
+  //                 TextButton(
+  //                   onPressed: () {
+  //                     Navigator.of(context).pop(); // Close the dialog
+  //                   },
+  //                   child: const Text('Close'),
+  //                 ),
+  //               ],
+  //             ));
+  //   }
+
+  //   // Close the box when done
+  //   await box.close();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -227,7 +302,7 @@ class _LoginState extends State<Login> {
                       child: ElevatedButton(
                           onPressed: () {
                             // calling for the function to login the user
-                            login_user();
+                            login();
                           },
                           style: ButtonStyle(
                             elevation: MaterialStateProperty.all(1),

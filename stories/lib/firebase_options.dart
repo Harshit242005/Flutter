@@ -17,15 +17,24 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for ios - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -43,41 +52,11 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBGzFx2R3F2_pUq6JVVK8VOb67c7gmn_iI',
-    appId: '1:168134864112:web:c5f3688f0419ad56296635',
-    messagingSenderId: '168134864112',
-    projectId: 'zeus-384017',
-    authDomain: 'zeus-384017.firebaseapp.com',
-    storageBucket: 'zeus-384017.appspot.com',
-    measurementId: 'G-2F4VPHTM7Z',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyB6GzLDssfMuj4F-rGM3dvGb4b9mW0_dGU',
     appId: '1:168134864112:android:23210cc0076a508a296635',
     messagingSenderId: '168134864112',
     projectId: 'zeus-384017',
     storageBucket: 'zeus-384017.appspot.com',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD23F7kqN7yaYFmw5D5TeX7i7vBC7twb-g',
-    appId: '1:168134864112:ios:5d55036eac3bd73a296635',
-    messagingSenderId: '168134864112',
-    projectId: 'zeus-384017',
-    storageBucket: 'zeus-384017.appspot.com',
-    iosClientId: '168134864112-pbn2p35m0ekp5e8j5clbgbifi4efrsqq.apps.googleusercontent.com',
-    iosBundleId: 'com.example.stories',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD23F7kqN7yaYFmw5D5TeX7i7vBC7twb-g',
-    appId: '1:168134864112:ios:eb2bd9a8f43dde59296635',
-    messagingSenderId: '168134864112',
-    projectId: 'zeus-384017',
-    storageBucket: 'zeus-384017.appspot.com',
-    iosClientId: '168134864112-vlcni0nlo5408kvbguk65t8nfd11455a.apps.googleusercontent.com',
-    iosBundleId: 'com.example.stories.RunnerTests',
   );
 }

@@ -21,6 +21,19 @@ class _SignupState extends State<Signup> {
 
   bool isHovered = false;
 
+  // a variable to check whether the signup button should become disable or not
+  var signupButton = false;
+  void changeSignupButton() {
+    String userEmail = email.text.trim();
+    String userPassword = password.text.trim();
+
+    bool emailIsValid = isEmailValid(userEmail);
+    bool passwordIsOptimalLength = optimalLength(userPassword);
+    setState(() {
+      signupButton = emailIsValid && passwordIsOptimalLength;
+    });
+  }
+
   // listen for the text controller
   final TextEditingController email = TextEditingController();
   final TextEditingController password = TextEditingController();
@@ -31,12 +44,80 @@ class _SignupState extends State<Signup> {
     _imagePicker = ImagePicker();
   }
 
+  // function to check whether the typed text is a gmail or not
+  bool isEmailValid(String input) {
+    // Regular expression for a simple email validation
+    // This regex is a simplified version and may not cover all edge cases.
+    // You may want to use a more comprehensive email validation regex.
+    RegExp regex = RegExp(r'^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$');
+    return regex.hasMatch(input);
+  }
+
+  // function to check whether the length of the password is not an optimal length or not
+  bool optimalLength(String password) {
+    if (password.length < 6) {
+      return false;
+    }
+    return true;
+  }
+
   void save_data() async {
     // Fetch user details
     String base64Image = await printBase64();
     String userEmail = email.text;
+    // check for the email regex check
+    if (!isEmailValid(userEmail)) {
+      // ignore: use_build_context_synchronously
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text(
+            'Invalid Email',
+            style: TextStyle(fontFamily: 'ReadexPro'),
+          ),
+          content: const Text(
+            'The typed text is not a valid email address.',
+            style: TextStyle(fontFamily: 'ReadexPro'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Close',
+                  style: TextStyle(fontFamily: 'ReadexPro')),
+            ),
+          ],
+        ),
+      );
+    }
     String userPassword = password.text;
-
+    // check for user password
+    if (!optimalLength(userPassword)) {
+      // ignore: use_build_context_synchronously
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text(
+            'Invalid password length',
+            style: TextStyle(fontFamily: 'ReadexPro'),
+          ),
+          content: const Text(
+            'The typed password length cannot be less than 6',
+            style: TextStyle(fontFamily: 'ReadexPro'),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Close',
+                  style: TextStyle(fontFamily: 'ReadexPro')),
+            ),
+          ],
+        ),
+      );
+    }
     String passwordHash = sha256.convert(utf8.encode(userPassword)).toString();
 
     // Create a new User instance
@@ -57,11 +138,8 @@ class _SignupState extends State<Signup> {
 
     // navigate to the next screen with the email value
     // ignore: use_build_context_synchronously
-    Navigator.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) =>
-                Landing(email: email.text, image: base64Image)));
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => Landing(email: email.text)));
   }
 
   // Function to handle image picking
@@ -156,6 +234,10 @@ class _SignupState extends State<Signup> {
                       height: 50,
                       child: TextField(
                         controller: email,
+                        onChanged: (value) {
+                          // Call the function to update signupButton whenever the text changes
+                          changeSignupButton();
+                        },
                         decoration: const InputDecoration(
                             labelText: 'Type gmail...',
                             hintStyle: TextStyle(fontFamily: 'ReadexPro'),
@@ -190,6 +272,10 @@ class _SignupState extends State<Signup> {
                       height: 50,
                       child: TextField(
                         controller: password,
+                        onChanged: (value) {
+                          // Call the function to update signupButton whenever the text changes
+                          changeSignupButton();
+                        },
                         decoration: const InputDecoration(
                             labelText: 'Type password...',
                             hintStyle: TextStyle(fontFamily: 'ReadexPro'),
@@ -212,8 +298,12 @@ class _SignupState extends State<Signup> {
                       onExit: (_) => setState(() => isHovered = false),
                       child: ElevatedButton(
                           onPressed: () {
-                            // CALLING TO SAVE THE DETAILS OF THE USER
-                            save_data();
+                            signupButton
+                                ? () {
+                                    // CALLING TO SAVE THE DETAILS OF THE USER
+                                    save_data();
+                                  }
+                                : null;
                           },
                           style: ButtonStyle(
                             elevation: MaterialStateProperty.all(1),
