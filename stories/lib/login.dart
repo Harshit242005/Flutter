@@ -1,6 +1,6 @@
 // ignore_for_file: avoid_print, duplicate_ignore, use_build_context_synchronously
 
-import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
@@ -34,73 +34,141 @@ class _LoginState extends State<Login> {
     String userEmail = email.text.trim();
     String userPassword = password.text.trim();
 
-    // Query Firestore to find a user document with the entered email
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where('email', isEqualTo: userEmail)
-        .limit(1)
-        .get();
-    print(querySnapshot.docs);
-    if (querySnapshot.docs.isNotEmpty) {
-      // User found, check if password matches
-      DocumentSnapshot userDoc = querySnapshot.docs.first;
-      String dbPassword = userDoc.get('password');
+    try {
+      // Sign in the user with email and password
+      UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: userEmail,
+        password: userPassword,
+      );
+      // user id from auth feature
+      String uid = userCredential.user!.uid;
 
-      if (userPassword == dbPassword) {
-        // Passwords match, navigate to next screen
-        // ignore: use_build_context_synchronously
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => Landing(
-                    email: userEmail,
-                  )),
-        );
-      } else {
-        // Incorrect password
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text(
-              'Incorrect Password',
-              style: TextStyle(fontFamily: 'ReadexPro'),
-            ),
-            content: const Text('The password entered is incorrect.',
-                style: TextStyle(fontFamily: 'ReadexPro')),
-            actions: <Widget>[
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Close',
-                    style: TextStyle(fontFamily: 'ReadexPro')),
-              ),
-            ],
+      // User authenticated successfully, navigate to next screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Landing(
+            email: userEmail,
+            uid: uid,
           ),
-        );
-      }
-    } else {
-      // User not found
+        ),
+      );
+    } catch (e) {
+      // An error occurred during sign-in
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('User Not Found',
-              style: TextStyle(fontFamily: 'ReadexPro')),
-          content: const Text('No user found with the provided email.',
-              style: TextStyle(fontFamily: 'ReadexPro')),
+          backgroundColor: Colors.black,
+          title: const Text(
+            'Authentication Error',
+            style: TextStyle(
+                fontFamily: 'ReadexPro',
+                fontWeight: FontWeight.w600,
+                color: Colors.white),
+          ),
+          content: Text(
+            'An error occurred during sign-in: $e',
+            style: const TextStyle(
+                fontFamily: 'ReadexPro',
+                fontWeight: FontWeight.w400,
+                color: Colors.white),
+          ),
           actions: <Widget>[
-            TextButton(
+            ElevatedButton(
+              style: ButtonStyle(
+                  backgroundColor: MaterialStateProperty.all(Colors.white),
+                  minimumSize: MaterialStateProperty.all(const Size(100, 50)),
+                  elevation: MaterialStateProperty.all(0),
+                  shape: MaterialStateProperty.all(RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5)))),
               onPressed: () {
                 Navigator.of(context).pop();
               },
               child: const Text('Close',
-                  style: TextStyle(fontFamily: 'ReadexPro')),
+                  style: TextStyle(
+                      fontFamily: 'ReadexPro',
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w400)),
             ),
           ],
         ),
       );
     }
   }
+
+  // void login() async {
+  //   String userEmail = email.text.trim();
+  //   String userPassword = password.text.trim();
+
+  //   // Query Firestore to find a user document with the entered email
+  //   QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+  //       .collection('users')
+  //       .where('email', isEqualTo: userEmail)
+  //       .limit(1)
+  //       .get();
+  //   print(querySnapshot.docs);
+  //   if (querySnapshot.docs.isNotEmpty) {
+  //     // User found, check if password matches
+  //     DocumentSnapshot userDoc = querySnapshot.docs.first;
+  //     String dbPassword = userDoc.get('password');
+
+  //     if (userPassword == dbPassword) {
+  //       // Passwords match, navigate to next screen
+  //       // ignore: use_build_context_synchronously
+  //       Navigator.push(
+  //         context,
+  //         MaterialPageRoute(
+  //             builder: (context) => Landing(
+  //                   email: userEmail,
+  //                 )),
+  //       );
+  //     } else {
+  //       // Incorrect password
+  //       showDialog(
+  //         context: context,
+  //         builder: (context) => AlertDialog(
+  //           title: const Text(
+  //             'Incorrect Password',
+  //             style: TextStyle(fontFamily: 'ReadexPro'),
+  //           ),
+  //           content: const Text('The password entered is incorrect.',
+  //               style: TextStyle(fontFamily: 'ReadexPro')),
+  //           actions: <Widget>[
+  //             TextButton(
+  //               onPressed: () {
+  //                 Navigator.of(context).pop();
+  //               },
+  //               child: const Text('Close',
+  //                   style: TextStyle(fontFamily: 'ReadexPro')),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //     }
+  //   } else {
+  //     // User not found
+  //     showDialog(
+  //       context: context,
+  //       builder: (context) => AlertDialog(
+  //         title: const Text('User Not Found',
+  //             style: TextStyle(fontFamily: 'ReadexPro')),
+  //         content: const Text('No user found with the provided email.',
+  //             style: TextStyle(fontFamily: 'ReadexPro')),
+  //         actions: <Widget>[
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //             child: const Text('Close',
+  //                 style: TextStyle(fontFamily: 'ReadexPro')),
+  //           ),
+  //         ],
+  //       ),
+  //     );
+  //   }
+  // }
 
   // // ignore: non_constant_identifier_names
   // void login_user() async {

@@ -2,18 +2,26 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
+import 'package:path/path.dart' as path;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:stories/createTask.dart';
-import 'package:stories/user.dart';
+import 'package:stories/main.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Landing extends StatefulWidget {
-  const Landing({Key? key, required this.email}) : super(key: key);
+  const Landing({Key? key, required this.email, required this.uid})
+      : super(key: key);
 
   final String email;
+  final String uid;
 
   @override
   // ignore: library_private_types_in_public_api
@@ -25,6 +33,9 @@ class _LandingState extends State<Landing> {
   Uint8List bytes = Uint8List(0);
   late ImagePicker _imagePicker;
   XFile? _imageFile;
+
+  // to hold the network url for the image
+  String user_profile_image = '';
 
   Future<String> printBase64() async {
     if (_imageFile != null) {
@@ -41,6 +52,42 @@ class _LandingState extends State<Landing> {
     }
   }
 
+  // Function to upload a new profile image for the user
+  Future<void> updateProfileImage(String userId, File newImage) async {
+    // Upload the new image file to Firebase Storage
+    String newImageUrl = await uploadImage(newImage);
+
+    // Update the user's document in Firestore with the new image URL
+    await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'userImage': newImageUrl,
+    });
+
+    setState(() {
+      user_profile_image = newImageUrl;
+    });
+
+    print('Profile image updated successfully!');
+  }
+
+  // function to get the user image file stored in the firebase storage feature
+  Future<String> uploadImage(File imageFile) async {
+    // Create a unique filename for the image
+    String filename = path.basename(imageFile.path);
+    print('file name is: $filename');
+    // Reference to the Firebase Storage bucket
+    Reference storageReference = FirebaseStorage.instance.ref().child(filename);
+
+    // Upload the file to Firebase Storage
+    UploadTask uploadTask = storageReference.putFile(imageFile);
+
+    // Wait for the upload to complete and get the download URL
+    TaskSnapshot snapshot = await uploadTask.whenComplete(() => null);
+    String downloadURL = await snapshot.ref.getDownloadURL();
+    print('image url: $downloadURL');
+    // Return the download URL
+    return downloadURL;
+  }
+
   Future<void> pickImage() async {
     try {
       XFile? pickedFile =
@@ -48,35 +95,7 @@ class _LandingState extends State<Landing> {
       if (pickedFile != null) {
         bool userConfirmation = (await conformation());
         print('user conformation for the profile change is: $userConfirmation');
-        if (userConfirmation) {
-          // Perform asynchronous work outside setState
-          String newUserProfileImage = await printBase64();
-
-          // Open the Hive box
-          var box = await Hive.openBox<User>('users');
-
-          // Find the user with the matching email
-          User? userToUpdate = box.values.firstWhere(
-            (user) => user.email == widget.email,
-          );
-
-          // Update the base64Image of the user
-          userToUpdate.base64Image = newUserProfileImage;
-
-          // Save the updated user back to the box
-          await box.put(userToUpdate.key, userToUpdate);
-
-          // Close the box when done
-          await box.close();
-
-          // Synchronously update the state
-          setState(() {
-            bytes = base64Decode(newUserProfileImage);
-          });
-        } else {
-          // Ignore: avoid_print
-          print('User denied the change of profile image');
-        }
+        // change the image in the retrieval form
       }
     } catch (e) {
       // Ignore: avoid_print
@@ -148,24 +167,63 @@ class _LandingState extends State<Landing> {
     return result ?? false;
   }
 
-  Future<void> loadImage() async {
-    var box = await Hive.openBox<User>('users');
-    User? user = box.values.firstWhere(
-      (user) => user.email == widget.email,
-    );
-    print('user box is: $user');
-    setState(() {
-      bytes = base64Decode(user.base64Image);
-    });
+  // Future<void> loadImage() async {
+  //   // var box = await Hive.openBox<User>('users');
+  //   // User? user = box.values.firstWhere(
+  //   //   (user) => user.email == widget.email,
+  //   // );
+  //   // print('user box is: $user');
+  //   // setState(() {
+  //   //   bytes = base64Decode(user.base64Image);
+  //   // });
 
-    await box.close();
+  //   // await box.close();
+
+  //   // load the url of the profile image from the firebase firestore document from collection
+
+  // }
+
+  Future<void> loadImage(String userId) async {
+    try {
+      // Get a reference to the Firestore instance
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Get a reference to the users collection
+      CollectionReference usersCollection = firestore.collection('users');
+
+      // Query the collection to find the document with the matching userId
+      QuerySnapshot querySnapshot = await usersCollection
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      // Check if the query returned any documents
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the first document from the query result
+        DocumentSnapshot document = querySnapshot.docs.first;
+
+        // Extract the userImage URL from the document
+        String userImage = document.get('userImage');
+
+        // Set the userImage URL in the user_profile_image variable using setState
+        setState(() {
+          user_profile_image = userImage;
+        });
+      } else {
+        // No document found with the matching userId
+        print('No document found for user with userId: $userId');
+      }
+    } catch (e) {
+      // Handle any errors that occur during the process
+      print('Error loading image: $e');
+    }
   }
 
   @override
   void initState() {
     super.initState();
 
-    loadImage();
+    loadImage(widget.uid);
     _imagePicker = ImagePicker();
   }
 
@@ -202,9 +260,8 @@ class _LandingState extends State<Landing> {
                                   width: 150,
                                   child: CircleAvatar(
                                     radius: 50,
-
-                                    backgroundImage: MemoryImage(
-                                        bytes), // Replace with your image asset
+                                    backgroundImage:
+                                        NetworkImage(user_profile_image),
                                     child: IconButton(
                                       tooltip: 'Change image',
                                       iconSize: 75,
@@ -221,7 +278,14 @@ class _LandingState extends State<Landing> {
                                 height: 75,
                               ),
                               ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    // this will logout the user
+                                    FirebaseAuth.instance.signOut();
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => MyApp()));
+                                  },
                                   style: ButtonStyle(
                                       elevation: MaterialStateProperty.all(0),
                                       minimumSize: MaterialStateProperty.all(
@@ -266,7 +330,7 @@ class _LandingState extends State<Landing> {
             );
           },
           child: CircleAvatar(
-            backgroundImage: MemoryImage(bytes),
+            backgroundImage: NetworkImage(user_profile_image),
           ),
         ),
 

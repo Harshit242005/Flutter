@@ -1,11 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:hive/hive.dart';
+// import 'package:hive/hive.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:stories/landing.dart';
-import 'package:stories/user.dart';
+// import 'package:stories/user.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:crypto/crypto.dart';
+
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:path/path.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Signup extends StatefulWidget {
   const Signup({Key? key}) : super(key: key);
@@ -61,15 +66,41 @@ class _SignupState extends State<Signup> {
     return true;
   }
 
+  // function to get the user image file stored in the firebase storage feature
+  Future<String> uploadImage(File imageFile) async {
+    // Create a unique filename for the image
+    String filename = basename(imageFile.path);
+
+    // Reference to the Firebase Storage bucket
+    Reference storageReference = FirebaseStorage.instance.ref().child(filename);
+
+    // Upload the file to Firebase Storage
+    UploadTask uploadTask = storageReference.putFile(imageFile);
+
+    // Wait for the upload to complete and get the download URL
+    TaskSnapshot snapshot = await uploadTask.whenComplete(() => null);
+    String downloadURL = await snapshot.ref.getDownloadURL();
+
+    // Return the download URL
+    return downloadURL;
+  }
+
   void save_data() async {
-    // Fetch user details
-    String base64Image = await printBase64();
+    print('save data function is called');
+    // // Fetch user details
+    // String base64Image = await printBase64();
+    // Convert XFile to File
+    File imageFile = File(_imageFile!.path);
+
+    // get the file downloadUrl from the storage database of the firebase
+    String profile_image_url = await uploadImage(imageFile);
+    print('profie image url is: $profile_image_url');
     String userEmail = email.text;
     // check for the email regex check
     if (!isEmailValid(userEmail)) {
       // ignore: use_build_context_synchronously
       showDialog(
-        context: context,
+        context: context as BuildContext,
         builder: (context) => AlertDialog(
           title: const Text(
             'Invalid Email',
@@ -92,11 +123,12 @@ class _SignupState extends State<Signup> {
       );
     }
     String userPassword = password.text;
+
     // check for user password
     if (!optimalLength(userPassword)) {
       // ignore: use_build_context_synchronously
       showDialog(
-        context: context,
+        context: context as BuildContext,
         builder: (context) => AlertDialog(
           title: const Text(
             'Invalid password length',
@@ -118,28 +150,53 @@ class _SignupState extends State<Signup> {
         ),
       );
     }
-    String passwordHash = sha256.convert(utf8.encode(userPassword)).toString();
 
-    // Create a new User instance
-    User newUser = User(
+    // inserting user in the firebase email password signin methodology
+    UserCredential userCredential =
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
       email: userEmail,
-      passwordHash: passwordHash,
-      base64Image: base64Image,
+      password: userPassword,
     );
 
-    // Open the Hive box
-    var box = await Hive.openBox<User>('users');
+    // Access the user's UID (auth_id)
+    // ignore: unused_local_variable
+    String uid = userCredential.user!.uid;
+    // ignore: unused_local_variable
+    bool uploadedUserDoc = await uploadData(uid, profile_image_url);
 
-    // Save the user to the box
-    await box.add(newUser);
+    if (uploadedUserDoc) {
+      Navigator.push(
+          context as BuildContext,
+          MaterialPageRoute(
+              builder: (context) => Landing(email: email.text, uid: uid)));
+    }
+  }
 
-    // Close the box when done
-    await box.close();
+  Future<bool> uploadData(String userId, String userImage) async {
+    try {
+      // Get a Firestore instance
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-    // navigate to the next screen with the email value
-    // ignore: use_build_context_synchronously
-    Navigator.push(context,
-        MaterialPageRoute(builder: (context) => Landing(email: email.text)));
+      // Specify the collection where you want to add the document
+      CollectionReference usersCollection = firestore.collection('users');
+
+      // Data to be uploaded as a document
+      Map<String, dynamic> userData = {
+        'userId': User,
+        'userImage': userImage,
+      };
+
+      // Add the document to the collection
+      DocumentReference documentRef = await usersCollection.add(userData);
+
+      print('Document ID: ${documentRef.id}');
+      print('Data uploaded successfully');
+      return true;
+    } catch (e) {
+      print('Error uploading data: $e');
+      // Handle the error appropriately
+      return false;
+    }
   }
 
   // Function to handle image picking
@@ -298,12 +355,13 @@ class _SignupState extends State<Signup> {
                       onExit: (_) => setState(() => isHovered = false),
                       child: ElevatedButton(
                           onPressed: () {
-                            signupButton
-                                ? () {
-                                    // CALLING TO SAVE THE DETAILS OF THE USER
-                                    save_data();
-                                  }
-                                : null;
+                            // signupButton
+                            //     ? () {
+                            //         // CALLING TO SAVE THE DETAILS OF THE USER
+                            //         save_data();
+                            //       }
+                            //     : null;
+                            save_data();
                           },
                           style: ButtonStyle(
                             elevation: MaterialStateProperty.all(1),
