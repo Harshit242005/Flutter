@@ -4,6 +4,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,10 +12,11 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:stories/createTask.dart';
+import 'package:stories/addFriend.dart';
 import 'package:stories/main.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:stories/profile.dart';
 
 class Landing extends StatefulWidget {
   const Landing({Key? key, required this.email, required this.uid})
@@ -29,8 +31,6 @@ class Landing extends StatefulWidget {
 }
 
 class _LandingState extends State<Landing> {
-  // ignore: non_constant_identifier_names
-  Uint8List bytes = Uint8List(0);
   late ImagePicker _imagePicker;
   XFile? _imageFile;
 
@@ -56,11 +56,39 @@ class _LandingState extends State<Landing> {
   Future<void> updateProfileImage(String userId, File newImage) async {
     // Upload the new image file to Firebase Storage
     String newImageUrl = await uploadImage(newImage);
-
+    print('new image url is: $newImageUrl');
     // Update the user's document in Firestore with the new image URL
-    await FirebaseFirestore.instance.collection('users').doc(userId).update({
-      'userImage': newImageUrl,
-    });
+
+    try {
+      // Get a reference to the Firestore instance
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Query the collection to find the document with the matching userId
+      QuerySnapshot querySnapshot = await firestore
+          .collection('users')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      // Check if the query returned any documents
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the reference to the first document from the query result
+        DocumentSnapshot document = querySnapshot.docs.first;
+
+        // Update the userImage field in the document
+        await document.reference.update({
+          'userImage': newImageUrl,
+        });
+
+        print('User image updated successfully!');
+      } else {
+        // No document found with the matching userId
+        print('No document found for user with userId: $userId');
+      }
+    } catch (e) {
+      // Handle any errors that occur during the process
+      print('Error updating user image: $e');
+    }
 
     setState(() {
       user_profile_image = newImageUrl;
@@ -74,6 +102,7 @@ class _LandingState extends State<Landing> {
     // Create a unique filename for the image
     String filename = path.basename(imageFile.path);
     print('file name is: $filename');
+
     // Reference to the Firebase Storage bucket
     Reference storageReference = FirebaseStorage.instance.ref().child(filename);
 
@@ -95,7 +124,12 @@ class _LandingState extends State<Landing> {
       if (pickedFile != null) {
         bool userConfirmation = (await conformation());
         print('user conformation for the profile change is: $userConfirmation');
+        File imageFile = File(pickedFile.path);
+        print('image file is: $imageFile');
         // change the image in the retrieval form
+        if (userConfirmation) {
+          await updateProfileImage(widget.uid, imageFile);
+        }
       }
     } catch (e) {
       // Ignore: avoid_print
@@ -167,22 +201,6 @@ class _LandingState extends State<Landing> {
     return result ?? false;
   }
 
-  // Future<void> loadImage() async {
-  //   // var box = await Hive.openBox<User>('users');
-  //   // User? user = box.values.firstWhere(
-  //   //   (user) => user.email == widget.email,
-  //   // );
-  //   // print('user box is: $user');
-  //   // setState(() {
-  //   //   bytes = base64Decode(user.base64Image);
-  //   // });
-
-  //   // await box.close();
-
-  //   // load the url of the profile image from the firebase firestore document from collection
-
-  // }
-
   Future<void> loadImage(String userId) async {
     try {
       // Get a reference to the Firestore instance
@@ -196,7 +214,7 @@ class _LandingState extends State<Landing> {
           .where('userId', isEqualTo: userId)
           .limit(1)
           .get();
-
+      print('query snapshot is: $querySnapshot');
       // Check if the query returned any documents
       if (querySnapshot.docs.isNotEmpty) {
         // Get the first document from the query result
@@ -204,7 +222,7 @@ class _LandingState extends State<Landing> {
 
         // Extract the userImage URL from the document
         String userImage = document.get('userImage');
-
+        print('user image url from the load image function: $userImage');
         // Set the userImage URL in the user_profile_image variable using setState
         setState(() {
           user_profile_image = userImage;
@@ -313,10 +331,16 @@ class _LandingState extends State<Landing> {
                                   RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(5)))),
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => Profile(
+                                          uid: widget.uid,
+                                          email: widget.email,
+                                        )));
                           },
                           child: const Text(
-                            'Close',
+                            'Profile',
                             style: TextStyle(
                                 fontFamily: 'ReadexPro',
                                 fontSize: 18,
@@ -344,8 +368,12 @@ class _LandingState extends State<Landing> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => CreateTask()));
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => AddFriend(
+                            uid: widget.uid,
+                          )));
             },
           ),
         ],

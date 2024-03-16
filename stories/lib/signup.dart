@@ -161,15 +161,14 @@ class _SignupState extends State<Signup> {
     // Access the user's UID (auth_id)
     // ignore: unused_local_variable
     String uid = userCredential.user!.uid;
+    print('user uid is: $uid');
     // ignore: unused_local_variable
     bool uploadedUserDoc = await uploadData(uid, profile_image_url);
 
-    if (uploadedUserDoc) {
-      Navigator.push(
-          context as BuildContext,
-          MaterialPageRoute(
-              builder: (context) => Landing(email: email.text, uid: uid)));
-    }
+    Navigator.push(
+        context as BuildContext,
+        MaterialPageRoute(
+            builder: (context) => Landing(email: email.text, uid: uid)));
   }
 
   Future<bool> uploadData(String userId, String userImage) async {
@@ -182,7 +181,7 @@ class _SignupState extends State<Signup> {
 
       // Data to be uploaded as a document
       Map<String, dynamic> userData = {
-        'userId': User,
+        'userId': userId,
         'userImage': userImage,
       };
 
