@@ -10,6 +10,7 @@ class AddFriend extends StatefulWidget {
 }
 
 class _CreateTaskState extends State<AddFriend> {
+  bool isAdding = true;
   // controllers for the input field
   final TextEditingController userName = TextEditingController();
   // variable to hold the documents
@@ -21,20 +22,13 @@ class _CreateTaskState extends State<AddFriend> {
       return;
     }
 
-    // // Query Firestore to search for users with matching names
-    // QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-    //     .collection('users')
-    //     .where('userName', isGreaterThanOrEqualTo: query)
-    //     .where('userName', isLessThanOrEqualTo: '$query\uf8ff')
-    //     .get();
-    String lowercaseQuery = query.toLowerCase();
-
-    // Query Firestore to search for users with matching names (case-insensitive)
+    // Query Firestore to search for users with matching names
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('users')
-        .where('userName', isGreaterThanOrEqualTo: lowercaseQuery)
-        .where('userName', isLessThanOrEqualTo: '$lowercaseQuery\uf8ff')
+        .where('userName', isGreaterThanOrEqualTo: query)
+        .where('userName', isLessThanOrEqualTo: '$query\uf8ff')
         .get();
+
     print('query docs are: ${querySnapshot.docs}');
     // Process the query results
     List<DocumentSnapshot> searchResults = querySnapshot.docs;
@@ -48,6 +42,98 @@ class _CreateTaskState extends State<AddFriend> {
     setState(() {
       _searchResults = searchResults;
     });
+  }
+
+  void removePerson(String userId) async {
+    try {
+      // Get a reference to the Firestore instance
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Get a reference to the users collection
+      CollectionReference usersCollection = firestore.collection('users');
+
+      // Query the collection to find the document with the matching userId
+      QuerySnapshot querySnapshot = await usersCollection
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      // Check if the query returned any documents
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the first document from the query result
+        DocumentSnapshot document = querySnapshot.docs.first;
+
+        // Get the current list of friend requests
+        List<dynamic> requests = document.get('request') ?? [];
+
+        // Check if the current user's UID is in the requests list
+        if (requests.contains(widget.uid)) {
+          // Remove the current user's UID from the requests list
+          requests.remove(widget.uid);
+
+          // Update the document with the updated requests list
+          await document.reference.update({'request': requests});
+
+          // Person removed successfully
+          print('Person removed successfully from user with ID: $userId');
+        } else {
+          // User's UID is not in the requests list
+          print('Person is not in the requests list for user with ID: $userId');
+        }
+      } else {
+        // No document found with the matching userId
+        print('No document found for user with ID: $userId');
+      }
+    } catch (e) {
+      // Handle any errors that occur during the process
+      print('Error removing person: $e');
+    }
+  }
+
+  void sendFriendRequest(String userId) async {
+    try {
+      // Get a reference to the Firestore instance
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+      // Get a reference to the users collection
+      CollectionReference usersCollection = firestore.collection('users');
+
+      // Query the collection to find the document with the matching userId
+      QuerySnapshot querySnapshot = await usersCollection
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      // Check if the query returned any documents
+      if (querySnapshot.docs.isNotEmpty) {
+        // Get the first document from the query result
+        DocumentSnapshot document = querySnapshot.docs.first;
+
+        // Get the current list of friend requests
+        List<dynamic> requests = document.get('request') ?? [];
+
+        // Check if the current user's UID is not already in the requests list
+        if (!requests.contains(widget.uid)) {
+          // Add the current user's UID to the requests list
+          requests.add(widget.uid);
+
+          // Update the document with the updated requests list
+          await document.reference.update({'request': requests});
+
+          // Friend request sent successfully
+          print('Friend request sent successfully to user with ID: $userId');
+        } else {
+          // User is already in the requests list
+          print('Friend request already sent to user with ID: $userId');
+        }
+      } else {
+        // No document found with the matching userId
+        print('No document found for user with ID: $userId');
+      }
+    } catch (e) {
+      // Handle any errors that occur during the process
+      print('Error sending friend request: $e');
+    }
   }
 
   @override
@@ -123,9 +209,22 @@ class _CreateTaskState extends State<AddFriend> {
                               style: const TextStyle(fontFamily: 'ReadexPro'),
                             ),
                             trailing: IconButton(
-                              icon: Icon(Icons.add),
+                              icon: isAdding
+                                  ? Icon(Icons.add)
+                                  : Icon(Icons.remove),
                               onPressed: () {
                                 // function to send a friend request and change the icon to - or remove button
+                                if (!isAdding) {
+                                  // Run function to remove the person from the request list
+                                  removePerson(_searchResults[index]["userId"]);
+                                } else {
+                                  // Run function to send a friend request
+                                  sendFriendRequest(
+                                      _searchResults[index]["userId"]);
+                                }
+                                setState(() {
+                                  isAdding = !isAdding;
+                                });
                               },
                             ),
                           );

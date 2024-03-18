@@ -1,5 +1,5 @@
 // to handle the landing page
-// ignore_for_file: prefer_const_constructors
+// ignore_for_file: prefer_const_constructors, avoid_unnecessary_containers
 
 import 'dart:convert';
 import 'dart:io';
@@ -13,10 +13,12 @@ import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:stories/addFriend.dart';
+import 'package:stories/chat.dart';
 import 'package:stories/main.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:stories/profile.dart';
+import 'package:stories/request.dart';
 
 class Landing extends StatefulWidget {
   const Landing({Key? key, required this.email, required this.uid})
@@ -237,11 +239,71 @@ class _LandingState extends State<Landing> {
     }
   }
 
+  // load the friends
+  List<DocumentSnapshot> _searchResults = [];
+  String DocId = "";
+  void loadFriends() async {
+    try {
+      // Get the user document to access the friend request list
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('userId', isEqualTo: widget.uid)
+          .get();
+
+      DocumentSnapshot userDoc = querySnapshot.docs.first;
+      DocId = userDoc.id;
+
+      List<String> requestIds = List<String>.from(userDoc.get('friend'));
+
+      List<DocumentSnapshot> documents = [];
+
+      // Query Firestore to get the user documents for each request ID
+      for (String requestId in requestIds) {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where('userId', isEqualTo: requestId)
+            .get();
+        if (querySnapshot.docs.isNotEmpty) {
+          documents.add(querySnapshot.docs.first);
+        }
+      }
+
+      setState(() {
+        _searchResults = documents;
+      });
+    } catch (error) {
+      print('Error loading friend requests: $error');
+    }
+  }
+
+  String friend_profile_image = '';
+  String friend_profile_name = '';
+  String friend_profile_description = '';
+  Future<void> show_user_profile(String user_friend_profile_id) async {
+    // showing user id
+
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('userId', isEqualTo: user_friend_profile_id)
+        .get();
+
+    DocumentSnapshot friendDoc = querySnapshot.docs.first;
+    String name = friendDoc.get('userName');
+    String description = friendDoc.get('userDescription');
+    String image = friendDoc.get('userImage');
+    setState(() {
+      friend_profile_image = image;
+      friend_profile_name = name;
+      friend_profile_description = description;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
 
     loadImage(widget.uid);
+    loadFriends();
     _imagePicker = ImagePicker();
   }
 
@@ -366,7 +428,16 @@ class _LandingState extends State<Landing> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+              onPressed: () {
+                // navigate to the friend list
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => Request(uid: widget.uid)));
+              },
+              icon: const Icon(Icons.notifications)),
+          IconButton(
+            icon: const Icon(Icons.person_add),
             onPressed: () {
               Navigator.push(
                   context,
@@ -383,7 +454,118 @@ class _LandingState extends State<Landing> {
         child: Center(
             child: Column(
           // ignore: prefer_const_literals_to_create_immutables
-          children: <Widget>[],
+          children: <Widget>[
+            SizedBox(
+              height: 50,
+            ),
+            // show the list view of the title of the friend list and add a onPressed function to navigate to the other page of chat
+            ListView.builder(
+              shrinkWrap: true,
+              physics: NeverScrollableScrollPhysics(),
+              itemCount: _searchResults.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  padding: EdgeInsets.all(5),
+                  width: double
+                      .infinity, // Set width to match available screen width
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                        color: const Color.fromARGB(
+                            99, 158, 158, 158)), // Add borders around ListTile
+                    borderRadius:
+                        BorderRadius.circular(0), // Optional: Add border radius
+                  ),
+                  child: ListTile(
+                    // can add a option of view the profile image in bigger view
+                    leading: GestureDetector(
+                        onTap: () async {
+                          await show_user_profile(
+                              _searchResults[index]['userId']);
+                          // show the dialog
+                          // ignore: use_build_context_synchronously
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Container(
+                                  child: AlertDialog(
+                                    backgroundColor: const Color.fromARGB(
+                                        255, 255, 255, 255),
+                                    content: Container(
+                                      height: 250,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        // ignore: prefer_const_literals_to_create_immutables
+                                        children: <Widget>[
+                                          // profile data would be shown here
+                                          Container(
+                                            height: 150,
+                                            width: 150,
+                                            child: CircleAvatar(
+                                              minRadius: 5,
+                                              maxRadius: 10,
+                                              backgroundImage: NetworkImage(
+                                                  friend_profile_image),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: 10,
+                                          ),
+                                          Text(
+                                            friend_profile_name,
+                                            style: TextStyle(
+                                                fontFamily: 'ReadexPro',
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                          SizedBox(
+                                            height: 25,
+                                          ),
+                                          Text(
+                                            friend_profile_description,
+                                            style: TextStyle(
+                                                fontFamily: 'ReadexPro',
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w400),
+                                          )
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              });
+                        },
+                        child: CircleAvatar(
+                          radius:
+                              30, // Increase the radius to increase the size of the CircleAvatar
+                          backgroundImage:
+                              NetworkImage(_searchResults[index]['userImage']),
+                        )),
+                    title: Text(
+                      _searchResults[index]['userName'],
+                      style: const TextStyle(
+                          fontFamily: 'ReadexPro',
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Chat(
+                            userId: _searchResults[index]['userId'],
+                            uid: widget.uid,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
         )),
       ),
     );

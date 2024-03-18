@@ -183,6 +183,10 @@ class _SignupState extends State<Signup> {
       Map<String, dynamic> userData = {
         'userId': userId,
         'userImage': userImage,
+        'friend': [],
+        'request': [],
+        'userDescription': '',
+        'userName': ''
       };
 
       // Add the document to the collection
