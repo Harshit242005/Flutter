@@ -17,9 +17,13 @@ class Chat extends StatefulWidget {
 class _ChatState extends State<Chat> {
   final TextEditingController chatMessage = TextEditingController();
   ScrollController _scrollController = ScrollController();
-  String user_profile_image = '';
-  String user_name = '';
+  FocusNode _focusNode = FocusNode();
 
+  String user_profile_image = '';
+  bool isDeleteButtonVisible = false;
+
+  String user_name = '';
+  String deleteDocumentId = '';
   void sendMessage() async {
     if (chatMessage.text.isNotEmpty) {
       try {
@@ -49,6 +53,7 @@ class _ChatState extends State<Chat> {
     }
   }
 
+  // to scroll donw automatically
   void _scrollToBottom() {
     _scrollController.animateTo(
       _scrollController.position.maxScrollExtent,
@@ -111,11 +116,50 @@ class _ChatState extends State<Chat> {
     return '$formattedTime - $formattedDate'; // Combine time and date
   }
 
+  void deletechat(String documentId) async {
+    try {
+      // Get the reference to the document in the chats collection
+      DocumentReference chatRef =
+          FirebaseFirestore.instance.collection('chats').doc(documentId);
+
+      // Delete the document
+      await chatRef.delete();
+
+      // Document successfully deleted
+      print('Chat document deleted successfully');
+      setState(() {
+        isDeleteButtonVisible = false;
+      });
+    } catch (e) {
+      // An error occurred while deleting the document
+      print('Error deleting chat document: $e');
+    }
+  }
+
   @override
   initState() {
     super.initState();
 
     load_user_data();
+    // listen for the focus on the text field and scroll donw in the scroll view
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        // Scroll down to the end of the ScrollView
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    // Dispose the controllers
+    _scrollController.dispose();
+    _focusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -133,139 +177,169 @@ class _ChatState extends State<Chat> {
               fontWeight: FontWeight.w600),
         ),
         actions: [
+          // conditionally
+          if (isDeleteButtonVisible)
+            isDeleteButtonVisible
+                ? IconButton(
+                    onPressed: () {
+                      deletechat(deleteDocumentId);
+                    },
+                    icon: const Icon(Icons.delete),
+                  )
+                : SizedBox(),
           IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert))
         ],
       ),
       // ignore: prefer_const_constructors
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        child: Column(
-          children: [
-            StreamBuilder(
-              stream: FirebaseFirestore.instance
-                  .collection('chats')
-                  .orderBy('timestamp',
-                      descending: false) // Order messages by timestamp
-                  .snapshots(),
-              builder: (BuildContext context,
-                  AsyncSnapshot<QuerySnapshot> snapshot) {
-                if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}');
-                }
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              child: Column(
+                children: <Widget>[
+                  StreamBuilder(
+                    stream: FirebaseFirestore.instance
+                        .collection('chats')
+                        .orderBy('timestamp', descending: false)
+                        .snapshots(),
+                    builder: (BuildContext context,
+                        AsyncSnapshot<QuerySnapshot> snapshot) {
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      }
 
-                switch (snapshot.connectionState) {
-                  case ConnectionState.waiting:
-                    // ignore: prefer_const_constructors
-                    return CircularProgressIndicator(
-                      color: Colors.black,
-                    );
-                  default:
-                    return Column(
-                      //controller: _scrollController,
-                      children:
-                          snapshot.data!.docs.map((DocumentSnapshot document) {
-                        Map<String, dynamic> data =
-                            document.data() as Map<String, dynamic>;
-                        return Container(
-                          margin: const EdgeInsets.only(top: 10),
-                          // ignore: prefer_const_constructors
-                          width: double.infinity,
-                          child: ListTile(
-                            title: Text(
-                              data['message'],
-                              textAlign: data['from'] == widget.uid
-                                  ? TextAlign.right
-                                  : TextAlign.left,
-                              style: TextStyle(
-                                  fontFamily: 'ReadexPro',
-                                  color: data['from'] == widget.uid
-                                      ? Colors.white
-                                      : Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400),
-                            ),
-                            subtitle: Text(
-                              formatTimestamp(data['timestamp'] as Timestamp),
-                              textAlign: data['from'] == widget.uid
-                                  ? TextAlign.right
-                                  : TextAlign.left,
-                              style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color.fromARGB(153, 98, 255, 103),
-                                  fontFamily: 'ReadexPro'),
-                            ),
-                            contentPadding: EdgeInsets.only(
-                                top: 20,
-                                bottom: 20,
-                                right: data['from'] == widget.uid ? 20 : 0,
-                                left: data['from'] == widget.uid ? 0 : 20),
-                            tileColor: data['from'] == widget.uid
-                                ? const Color.fromARGB(255, 0, 0, 0)
-                                : const Color.fromARGB(255, 247, 219, 219),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(
-                                    data['from'] == widget.uid ? 50.0 : 0.0),
-                                topRight: Radius.circular(
-                                    data['from'] != widget.uid ? 50.0 : 0.0),
-                                bottomLeft: Radius.circular(50.0),
-                                bottomRight: Radius.circular(50.0),
-                              ),
-                            ),
-                            trailing: data['from'] == widget.uid
-                                ? null
-                                // ignore: prefer_const_constructors
-                                : SizedBox(
-                                    width: 0,
+                      switch (snapshot.connectionState) {
+                        default:
+                          return Column(
+                            children: snapshot.data!.docs
+                                .map((DocumentSnapshot document) {
+                              Map<String, dynamic> data =
+                                  document.data() as Map<String, dynamic>;
+                              String documentId = document.id;
+                              String fromId = document['from'];
+                              return Container(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.of(context).size.width,
+                                ),
+                                margin: EdgeInsets.only(
+                                  top: 10,
+                                  left: data['from'] == widget.uid ? 135 : 0,
+                                  right: data['from'] == widget.uid ? 0 : 135,
+                                ),
+                                width: 225,
+                                child: ListTile(
+                                  title: Text(
+                                    data['message'],
+                                    textAlign: data['from'] == widget.uid
+                                        ? TextAlign.right
+                                        : TextAlign.left,
+                                    style: TextStyle(
+                                        fontFamily: 'ReadexPro',
+                                        color: data['from'] == widget.uid
+                                            ? Colors.white
+                                            : Colors.black,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400),
                                   ),
-                            leading: data['from'] == widget.uid
-                                // ignore: prefer_const_constructors
-                                ? SizedBox(
-                                    width: 25,
-                                  )
-                                : null,
-                          ),
-                        );
-                      }).toList(),
-                    );
-                }
-              },
+                                  subtitle: Text(
+                                    formatTimestamp(
+                                        data['timestamp'] as Timestamp),
+                                    textAlign: data['from'] == widget.uid
+                                        ? TextAlign.right
+                                        : TextAlign.left,
+                                    style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            Color.fromARGB(153, 98, 255, 103),
+                                        fontFamily: 'ReadexPro'),
+                                  ),
+                                  contentPadding: EdgeInsets.only(
+                                      top: 20,
+                                      bottom: 20,
+                                      right:
+                                          data['from'] == widget.uid ? 20 : 0,
+                                      left:
+                                          data['from'] == widget.uid ? 0 : 20),
+                                  tileColor: data['from'] == widget.uid
+                                      ? const Color.fromARGB(255, 0, 0, 0)
+                                      : const Color.fromARGB(
+                                          255, 247, 219, 219),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(
+                                          data['from'] == widget.uid
+                                              ? 50.0
+                                              : 0.0),
+                                      topRight: Radius.circular(
+                                          data['from'] != widget.uid
+                                              ? 50.0
+                                              : 0.0),
+                                      bottomLeft: Radius.circular(50.0),
+                                      bottomRight: Radius.circular(50.0),
+                                    ),
+                                  ),
+                                  trailing: data['from'] == widget.uid
+                                      ? null
+                                      : SizedBox(
+                                          width: 0,
+                                        ),
+                                  leading: data['from'] == widget.uid
+                                      ? SizedBox(
+                                          width: 25,
+                                        )
+                                      : null,
+                                  onLongPress: () {
+                                    if (fromId == widget.uid) {
+                                      deleteDocumentId = documentId;
+                                      setState(() {
+                                        isDeleteButtonVisible = true;
+                                      });
+                                    }
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          );
+                      }
+                    },
+                  ),
+                  const SizedBox(
+                    height: 25,
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
-
-      bottomNavigationBar: BottomAppBar(
-        elevation: 0,
-        height: 100,
-        color: Colors.white,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            children: <Widget>[
-              Expanded(
-                child: TextField(
-                  maxLines: null,
-                  scrollPadding: EdgeInsets.only(
-                      bottom: MediaQuery.of(context).viewInsets.bottom),
-                  decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.all(25),
-                      labelText: 'Type message...',
-                      labelStyle: const TextStyle(
-                          fontFamily: 'ReadexPro',
-                          color: Color.fromARGB(157, 0, 0, 0)),
-                      border: OutlineInputBorder(
-                          borderSide: const BorderSide(
-                              width: 0.1, color: Color.fromARGB(54, 0, 0, 0)),
-                          borderRadius: BorderRadius.circular(50))),
-                  controller: chatMessage,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 5.0),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                    child: Container(
+                        constraints: const BoxConstraints(maxHeight: 100),
+                        child: TextField(
+                          focusNode: _focusNode,
+                          scrollPadding: const EdgeInsets.all(50),
+                          maxLines: null,
+                          decoration: InputDecoration(
+                              contentPadding: const EdgeInsets.all(25),
+                              labelText: 'Type message...',
+                              labelStyle: const TextStyle(
+                                  fontFamily: 'ReadexPro',
+                                  color: Color.fromARGB(157, 0, 0, 0)),
+                              border: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                      width: 0.1,
+                                      color: Color.fromARGB(54, 0, 0, 0)),
+                                  borderRadius: BorderRadius.circular(50))),
+                          controller: chatMessage,
+                        ))),
+                const SizedBox(
+                  width: 10,
                 ),
-              ),
-              const SizedBox(
-                width: 10,
-              ),
-              Container(
+                Container(
                   padding: EdgeInsets.all(5),
                   decoration: BoxDecoration(
                       border: Border.all(width: 0.5, color: Colors.black),
@@ -273,17 +347,20 @@ class _ChatState extends State<Chat> {
                         50,
                       )),
                   child: IconButton(
-                      onPressed: () {
-                        sendMessage();
-                      },
-                      icon: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.black,
-                        size: 35,
-                      )))
-            ],
+                    onPressed: () {
+                      sendMessage();
+                    },
+                    icon: const Icon(
+                      Icons.send_rounded,
+                      color: Colors.black,
+                      size: 35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
