@@ -1,11 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:stories/firebase_options.dart';
+import 'package:stories/landing.dart';
 import 'package:stories/login.dart';
 import 'package:stories/signup.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:stories/my_app_lifecycle_observer.dart';
 // import 'firebase_options.dart';
 import 'user.dart';
 
@@ -16,15 +18,33 @@ void main() async {
   // Register the User adapter
   Hive.registerAdapter(UserAdapter());
   await Hive.initFlutter();
-  runApp(const MyApp());
+  // Get the UID from the Hive box
+  final userBox = await Hive.openBox<UserData>('userBox');
+  final String uid =
+      userBox.get('user')?.uid ?? ''; // Get the UID or use a default value
+
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]).then((_) {
+    runApp(MyApp(uid: uid));
+  });
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String uid;
+  const MyApp({super.key, required this.uid});
+
+  //  get the uid of the applicatio
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final lifecycleObserver = MyAppLifecycleObserver(uid);
+    // Add the observer to the widget binding observer list
+    WidgetsBinding.instance.addObserver(lifecycleObserver);
+
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
@@ -46,6 +66,37 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  void userExist() async {
+    // Open the Hive box for user data
+    final userBox = await Hive.openBox<UserData>('userBox');
+
+    final String email = userBox.get('user')?.email ?? '';
+    final String uid = userBox.get('user')?.uid ?? '';
+    print('email is: $email and uid is: $uid');
+
+    if (email.isNotEmpty && uid.isNotEmpty) {
+      // Navigate to the landing page and pass email and uid as arguments
+      // ignore: use_build_context_synchronously
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Landing(email: email, uid: uid),
+        ),
+      );
+    }
+
+    // Close the Hive box
+    await userBox.close();
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    userExist();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

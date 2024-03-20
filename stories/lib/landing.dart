@@ -3,8 +3,8 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+
+import 'package:hive/hive.dart';
 import 'package:path/path.dart' as path;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,6 +19,7 @@ import 'package:stories/main.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:stories/profile.dart';
 import 'package:stories/request.dart';
+import 'package:stories/user.dart';
 
 class Landing extends StatefulWidget {
   const Landing({Key? key, required this.email, required this.uid})
@@ -239,25 +240,68 @@ class _LandingState extends State<Landing> {
     }
   }
 
+  // to listen for the stream
+  late Stream<List<DocumentSnapshot>> friendsStream;
+
   // load the friends
-  List<DocumentSnapshot> _searchResults = [];
+  // List<DocumentSnapshot> _searchResults = [];
   String DocId = "";
-  void loadFriends() async {
-    try {
-      // Get the user document to access the friend request list
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('userId', isEqualTo: widget.uid)
-          .get();
+  // void loadFriends() async {
+  //   try {
+  //     // Get the user document to access the friend request list
+  //     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+  //         .collection('users')
+  //         .where('userId', isEqualTo: widget.uid)
+  //         .get();
 
-      DocumentSnapshot userDoc = querySnapshot.docs.first;
-      DocId = userDoc.id;
+  //     DocumentSnapshot userDoc = querySnapshot.docs.first;
+  //     DocId = userDoc.id;
 
-      List<String> requestIds = List<String>.from(userDoc.get('friend'));
+  //     List<String> requestIds = List<String>.from(userDoc.get('friend'));
 
+  //     List<DocumentSnapshot> documents = [];
+
+  //     // Query Firestore to get the user documents for each request ID
+  //     for (String requestId in requestIds) {
+  //       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+  //           .collection('users')
+  //           .where('userId', isEqualTo: requestId)
+  //           .get();
+  //       if (querySnapshot.docs.isNotEmpty) {
+  //         documents.add(querySnapshot.docs.first);
+  //       }
+  //     }
+
+  //     setState(() {
+  //       _searchResults = documents;
+  //     });
+  //   } catch (error) {
+  //     print('Error loading friend requests: $error');
+  //   }
+  // }
+
+  // to load the doc id
+  void load_doc_id() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .where('userId', isEqualTo: widget.uid)
+        .get();
+
+    DocumentSnapshot userDoc = querySnapshot.docs.first;
+    DocId = userDoc.id;
+  }
+
+  void loadFriends() {
+    friendsStream = FirebaseFirestore.instance
+        .collection('users')
+        .where('userId', isEqualTo: widget.uid)
+        .snapshots()
+        .asyncMap((docSnapshot) async {
+      List<String> requestIds =
+          List<String>.from(docSnapshot.docs.first.get('friend'));
+      print('friends ids are: $requestIds');
       List<DocumentSnapshot> documents = [];
 
-      // Query Firestore to get the user documents for each request ID
       for (String requestId in requestIds) {
         QuerySnapshot querySnapshot = await FirebaseFirestore.instance
             .collection('users')
@@ -268,12 +312,8 @@ class _LandingState extends State<Landing> {
         }
       }
 
-      setState(() {
-        _searchResults = documents;
-      });
-    } catch (error) {
-      print('Error loading friend requests: $error');
-    }
+      return documents;
+    });
   }
 
   String friend_profile_image = '';
@@ -298,10 +338,26 @@ class _LandingState extends State<Landing> {
     });
   }
 
+  // to get the hive box and save the blank email and uid values
+  void logout() async {
+    // Open the Hive box for user data
+    final userBox = await Hive.openBox<UserData>('userBox');
+
+    // Clear the email and uid values in the box
+    await userBox.put('user', UserData(uid: '', email: ''));
+
+    // Close the Hive box
+    await userBox.close();
+
+    // ignore: use_build_context_synchronously
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => MyApp(uid: '')));
+  }
+
   @override
   void initState() {
     super.initState();
-
+    load_doc_id();
     loadImage(widget.uid);
     loadFriends();
     _imagePicker = ImagePicker();
@@ -361,10 +417,7 @@ class _LandingState extends State<Landing> {
                                   onPressed: () {
                                     // this will logout the user
                                     FirebaseAuth.instance.signOut();
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => MyApp()));
+                                    logout();
                                   },
                                   style: ButtonStyle(
                                       elevation: MaterialStateProperty.all(0),
@@ -452,38 +505,41 @@ class _LandingState extends State<Landing> {
 
       body: SingleChildScrollView(
         child: Center(
-            child: Column(
-          // ignore: prefer_const_literals_to_create_immutables
-          children: <Widget>[
-            SizedBox(
-              height: 50,
-            ),
-            // show the list view of the title of the friend list and add a onPressed function to navigate to the other page of chat
-            ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: _searchResults.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  padding: EdgeInsets.all(5),
-                  width: double
-                      .infinity, // Set width to match available screen width
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                        color: const Color.fromARGB(
-                            99, 158, 158, 158)), // Add borders around ListTile
-                    borderRadius:
-                        BorderRadius.circular(0), // Optional: Add border radius
-                  ),
-                  child: ListTile(
-                    // can add a option of view the profile image in bigger view
-                    leading: GestureDetector(
-                        onTap: () async {
-                          await show_user_profile(
-                              _searchResults[index]['userId']);
-                          // show the dialog
-                          // ignore: use_build_context_synchronously
-                          showDialog(
+          child: StreamBuilder<List<DocumentSnapshot>>(
+            stream: friendsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return CircularProgressIndicator(); // Show loading indicator while waiting for data
+              } else if (snapshot.hasError) {
+                return Text(
+                    'Error: ${snapshot.error}'); // Show error message if there's an error
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Text(
+                    'No friends found.'); // Show message if there are no friends
+              } else {
+                // Build the list view using the data from the stream
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  itemCount: snapshot.data!.length,
+                  itemBuilder: (context, index) {
+                    DocumentSnapshot friend = snapshot.data![index];
+                    return Container(
+                      margin: EdgeInsets.only(top: 50),
+                      padding: EdgeInsets.all(5),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color.fromARGB(99, 158, 158, 158),
+                        ),
+                        borderRadius: BorderRadius.circular(0),
+                      ),
+                      child: ListTile(
+                        leading: GestureDetector(
+                          onTap: () async {
+                            await show_user_profile(friend['userId']);
+                            // ignore: use_build_context_synchronously
+                            showDialog(
                               context: context,
                               builder: (BuildContext context) {
                                 return Container(
@@ -491,15 +547,13 @@ class _LandingState extends State<Landing> {
                                     backgroundColor: const Color.fromARGB(
                                         255, 255, 255, 255),
                                     content: Container(
-                                      height: 250,
+                                      height: 275,
                                       child: Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         crossAxisAlignment:
                                             CrossAxisAlignment.center,
-                                        // ignore: prefer_const_literals_to_create_immutables
                                         children: <Widget>[
-                                          // profile data would be shown here
                                           Container(
                                             height: 150,
                                             width: 150,
@@ -510,63 +564,110 @@ class _LandingState extends State<Landing> {
                                                   friend_profile_image),
                                             ),
                                           ),
-                                          SizedBox(
-                                            height: 10,
-                                          ),
+                                          SizedBox(height: 10),
                                           Text(
                                             friend_profile_name,
+                                            textAlign: TextAlign.center,
                                             style: TextStyle(
-                                                fontFamily: 'ReadexPro',
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w600),
+                                              fontFamily: 'ReadexPro',
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w600,
+                                            ),
                                           ),
-                                          SizedBox(
-                                            height: 25,
-                                          ),
+                                          SizedBox(height: 25),
                                           Text(
                                             friend_profile_description,
+                                            textAlign: TextAlign.center,
                                             style: TextStyle(
-                                                fontFamily: 'ReadexPro',
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w400),
-                                          )
+                                              fontFamily: 'ReadexPro',
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w400,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
                                   ),
                                 );
-                              });
-                        },
-                        child: CircleAvatar(
-                          radius:
-                              30, // Increase the radius to increase the size of the CircleAvatar
-                          backgroundImage:
-                              NetworkImage(_searchResults[index]['userImage']),
-                        )),
-                    title: Text(
-                      _searchResults[index]['userName'],
-                      style: const TextStyle(
-                          fontFamily: 'ReadexPro',
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => Chat(
-                            userId: _searchResults[index]['userId'],
-                            uid: widget.uid,
+                              },
+                            );
+                          },
+                          child: Stack(
+                            children: [
+                              CircleAvatar(
+                                radius: 30,
+                                backgroundImage:
+                                    NetworkImage(friend['userImage']),
+                              ),
+                              StreamBuilder<DocumentSnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .where('userId',
+                                        isEqualTo: friend['userId'])
+                                    .snapshots()
+                                    .map((querySnapshot) {
+                                  return querySnapshot.docs.first;
+                                }),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState ==
+                                      ConnectionState.waiting) {
+                                    // Return a loading indicator while waiting for data
+                                    return CircularProgressIndicator();
+                                  } else if (snapshot.hasError) {
+                                    // Return an error message if there's an error
+                                    return Text('Error: ${snapshot.error}');
+                                  } else {
+                                    // Extract the status from the snapshot data
+                                    final String status =
+                                        snapshot.data?['status'] ?? 'offline';
+                                    // Return the appropriate status indicator based on the status value
+                                    return Positioned(
+                                      bottom: 0,
+                                      child: Container(
+                                        width: 15,
+                                        height: 15,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: status == 'online'
+                                              ? const Color.fromARGB(
+                                                  255, 103, 255, 108)
+                                              : Colors.grey,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        title: Text(
+                          friend['userName'],
+                          style: const TextStyle(
+                            fontFamily: 'ReadexPro',
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Chat(
+                                userId: friend['userId'],
+                                uid: widget.uid,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
                 );
-              },
-            ),
-          ],
-        )),
+              }
+            },
+          ),
+        ),
       ),
     );
   }
