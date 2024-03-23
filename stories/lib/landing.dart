@@ -525,7 +525,7 @@ class _LandingState extends State<Landing> {
                   itemBuilder: (context, index) {
                     DocumentSnapshot friend = snapshot.data![index];
                     return Container(
-                      margin: EdgeInsets.only(top: 50),
+                      // margin: EdgeInsets.only(top: 50),
                       padding: EdgeInsets.all(5),
                       width: double.infinity,
                       decoration: BoxDecoration(

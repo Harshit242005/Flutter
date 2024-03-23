@@ -33,8 +33,44 @@ class _CreateTaskState extends State<AddFriend> {
     // Process the query results
     List<DocumentSnapshot> searchResults = querySnapshot.docs;
     searchResults.removeWhere((doc) => doc['userId'] == widget.uid);
+    // get my friends list as well and remove those docuemnt also from the results
+    List friendList = await getFriendList();
+    for (String friendId in friendList) {
+      searchResults.removeWhere((doc) => doc['userId'] == friendId);
+    }
+
     // Update the UI with the search results
     updateSearchResults(searchResults);
+  }
+
+  Future<List> getFriendList() async {
+    try {
+      // Get the user document where userId matches widget.uid
+      DocumentSnapshot userDocSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('userId', isEqualTo: widget.uid)
+          .get()
+          .then((querySnapshot) {
+        if (querySnapshot.docs.isNotEmpty) {
+          return querySnapshot.docs.first;
+        } else {
+          throw Exception("User document not found");
+        }
+      });
+
+      // Extract the friend array from the user document
+      dynamic userData = userDocSnapshot.data();
+      List<String> friendList = userData?['friend'] != null
+          ? List<String>.from(userData['friend'])
+          : [];
+
+      // Now you have the friend list array, you can use it as needed
+      print("Friend List: $friendList");
+      return friendList;
+    } catch (error) {
+      print('Error retrieving friend list: $error');
+      return [];
+    }
   }
 
   void updateSearchResults(List<DocumentSnapshot> searchResults) {

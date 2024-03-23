@@ -85,7 +85,7 @@ class _SignupState extends State<Signup> {
     return downloadURL;
   }
 
-  void save_data() async {
+  void save_data(BuildContext context) async {
     print('save data function is called');
     // // Fetch user details
     // String base64Image = await printBase64();
@@ -163,15 +163,11 @@ class _SignupState extends State<Signup> {
     String uid = userCredential.user!.uid;
     print('user uid is: $uid');
     // ignore: unused_local_variable
-    bool uploadedUserDoc = await uploadData(uid, profile_image_url);
-
-    Navigator.push(
-        context as BuildContext,
-        MaterialPageRoute(
-            builder: (context) => Landing(email: email.text, uid: uid)));
+    await uploadData(context, uid, profile_image_url);
   }
 
-  Future<bool> uploadData(String userId, String userImage) async {
+  Future<void> uploadData(
+      BuildContext context, String userId, String userImage) async {
     try {
       // Get a Firestore instance
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -186,7 +182,9 @@ class _SignupState extends State<Signup> {
         'friend': [],
         'request': [],
         'userDescription': '',
-        'userName': ''
+        'userName': '',
+        'block': [],
+        'status': 'online'
       };
 
       // Add the document to the collection
@@ -194,11 +192,15 @@ class _SignupState extends State<Signup> {
 
       print('Document ID: ${documentRef.id}');
       print('Data uploaded successfully');
-      return true;
+
+      // ignore: use_build_context_synchronously
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => Landing(email: email.text, uid: userId)));
     } catch (e) {
       print('Error uploading data: $e');
       // Handle the error appropriately
-      return false;
     }
   }
 
@@ -358,13 +360,7 @@ class _SignupState extends State<Signup> {
                       onExit: (_) => setState(() => isHovered = false),
                       child: ElevatedButton(
                           onPressed: () {
-                            // signupButton
-                            //     ? () {
-                            //         // CALLING TO SAVE THE DETAILS OF THE USER
-                            //         save_data();
-                            //       }
-                            //     : null;
-                            save_data();
+                            save_data(context);
                           },
                           style: ButtonStyle(
                             elevation: MaterialStateProperty.all(1),

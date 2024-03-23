@@ -66,7 +66,7 @@ class _RequestState extends State<Request> {
       List<dynamic> friends = userDoc.get('friend') ?? [];
 
       // Add the current user's uid to the list of friends if it's not already present
-      if (!friends.contains(widget.uid)) {
+      if (!friends.contains(userId)) {
         friends.add(userId);
 
         // Update the document with the modified friends list
